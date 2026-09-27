@@ -20,7 +20,6 @@
         @keyframes scan {
             0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; }
         }
-        /* Hide scrollbar for kanban board but allow scrolling */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -74,7 +73,7 @@
                     </div>
                     <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-yellow-500">
                         <p class="text-xs text-gray-500">Order Aktif</p>
-                        <h3 class="text-xl sm:text-2xl font-bold">5 <span class="text-xs font-normal">batch</span></h3>
+                        <h3 class="text-xl sm:text-2xl font-bold" id="dashboard-order-aktif">4 <span class="text-xs font-normal">batch</span></h3>
                     </div>
                     <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-green-500 col-span-2 md:col-span-1">
                         <p class="text-xs text-gray-500">Saldo Kas (Bulan Ini)</p>
@@ -93,7 +92,6 @@
                 <h2 class="text-xl sm:text-2xl font-bold mb-4">Manajemen Stok & Barcode</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     
-                    <!-- Area Scanner -->
                     <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100">
                         <h3 class="font-bold mb-3 border-b pb-2 text-sm sm:text-base"><i class="fas fa-camera text-blue-600"></i> Scan Barcode</h3>
                         
@@ -128,7 +126,6 @@
                         </div>
                     </div>
 
-                    <!-- Riwayat Scanner -->
                     <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100">
                         <h3 class="font-bold mb-3 border-b pb-2 text-sm sm:text-base">Riwayat Scan</h3>
                         <div class="overflow-x-auto">
@@ -157,60 +154,68 @@
             <section id="produksi" class="tab-content hidden h-full flex flex-col">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl sm:text-2xl font-bold">Alur Produksi</h2>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs sm:text-sm rounded font-bold shadow-sm">
+                    <button onclick="tambahOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs sm:text-sm rounded font-bold shadow-sm">
                         <i class="fas fa-plus"></i> Order Baru
                     </button>
                 </div>
                 
-                <!-- Kanban Board (Bisa di-scroll ke samping di HP) -->
+                <!-- Kanban Board -->
                 <div class="flex overflow-x-auto hide-scrollbar gap-4 pb-4 flex-1 items-start">
                     
-                    <!-- Tahap Potong[span_3](start_span)[span_3](end_span) -->
+                    <!-- Tahap Potong -->
                     <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
                         <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            1. Potong <span class="bg-blue-200 text-blue-800 text-xs rounded-full px-2 py-0.5">2</span>
+                            1. Potong <span id="badge-potong" class="bg-blue-200 text-blue-800 text-xs rounded-full px-2 py-0.5 font-bold">2</span>
                         </h3>
-                        <div class="bg-white p-3 rounded-md shadow-sm border-l-4 border-blue-500 mb-2">
-                            <p class="font-bold text-sm text-gray-800">ORD-001</p>
-                            <p class="text-xs text-gray-500 mb-2">Diora Pants (100 pcs)</p>
-                            <button class="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs py-1.5 rounded border border-blue-200 font-semibold transition">Geser ke Jahit &rarr;</button>
-                        </div>
-                        <div class="bg-white p-3 rounded-md shadow-sm border-l-4 border-blue-500 mb-2">
-                            <p class="font-bold text-sm text-gray-800">ORD-002</p>
-                            <p class="text-xs text-gray-500 mb-2">Sakura Dress (50 pcs)</p>
-                            <button class="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs py-1.5 rounded border border-blue-200 font-semibold transition">Geser ke Jahit &rarr;</button>
-                        </div>
-                    </div>
-
-                    <!-- Tahap Jahit[span_4](start_span)[span_4](end_span) -->
-                    <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            2. Jahit <span class="bg-yellow-200 text-yellow-800 text-xs rounded-full px-2 py-0.5">1</span>
-                        </h3>
-                        <div class="bg-white p-3 rounded-md shadow-sm border-l-4 border-yellow-500 mb-2">
-                            <p class="font-bold text-sm text-gray-800">ORD-003</p>
-                            <p class="text-xs text-gray-500 mb-2">Kemeja Flanel (200 pcs)</p>
-                            <button class="w-full bg-yellow-50 text-yellow-700 hover:bg-yellow-100 text-xs py-1.5 rounded border border-yellow-200 font-semibold transition">Geser ke QC &rarr;</button>
+                        <div id="container-potong" class="min-h-[100px]">
+                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-blue-500 mb-2 transition-all duration-300">
+                                <p class="font-bold text-sm text-gray-800">ORD-001</p>
+                                <p class="text-xs text-gray-500 mb-2">Diora Pants (100 pcs)</p>
+                                <button onclick="geserTahap(this, 'potong', 'jahit')" class="btn-action w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs py-1.5 rounded font-semibold transition shadow-sm">Geser ke Jahit &rarr;</button>
+                            </div>
+                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-blue-500 mb-2 transition-all duration-300">
+                                <p class="font-bold text-sm text-gray-800">ORD-002</p>
+                                <p class="text-xs text-gray-500 mb-2">Sakura Dress (50 pcs)</p>
+                                <button onclick="geserTahap(this, 'potong', 'jahit')" class="btn-action w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs py-1.5 rounded font-semibold transition shadow-sm">Geser ke Jahit &rarr;</button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Tahap QC[span_5](start_span)[span_5](end_span) -->
+                    <!-- Tahap Jahit -->
                     <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
                         <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            3. QC <span class="bg-gray-200 text-gray-700 text-xs rounded-full px-2 py-0.5">0</span>
+                            2. Jahit <span id="badge-jahit" class="bg-yellow-200 text-yellow-800 text-xs rounded-full px-2 py-0.5 font-bold">1</span>
                         </h3>
-                        <p class="text-xs text-center text-gray-400 py-6 italic border-2 border-dashed border-gray-200 rounded">Kosong</p>
+                        <div id="container-jahit" class="min-h-[100px]">
+                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-yellow-500 mb-2 transition-all duration-300">
+                                <p class="font-bold text-sm text-gray-800">ORD-003</p>
+                                <p class="text-xs text-gray-500 mb-2">Kemeja Flanel (200 pcs)</p>
+                                <button onclick="geserTahap(this, 'jahit', 'qc')" class="btn-action w-full bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200 text-xs py-1.5 rounded font-semibold transition shadow-sm">Geser ke QC &rarr;</button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Tahap Packing[span_6](start_span)[span_6](end_span) -->
+                    <!-- Tahap QC -->
                     <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
                         <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            4. Packing <span class="bg-green-200 text-green-800 text-xs rounded-full px-2 py-0.5">1</span>
+                            3. QC <span id="badge-qc" class="bg-red-200 text-red-800 text-xs rounded-full px-2 py-0.5 font-bold">0</span>
                         </h3>
-                        <div class="bg-white p-3 rounded-md shadow-sm border-l-4 border-green-500 mb-2">
-                            <p class="font-bold text-sm text-gray-800">ORD-004</p>
-                            <p class="text-xs text-gray-500 mb-2">Celana Chino (75 pcs)</p>
-                            <button class="w-full bg-green-500 hover:bg-green-600 text-white text-xs py-1.5 rounded font-bold shadow-sm transition"><i class="fas fa-check"></i> Masuk Gudang</button>
+                        <div id="container-qc" class="min-h-[100px]">
+                            <p class="empty-msg text-xs text-center text-gray-400 py-6 italic border-2 border-dashed border-gray-200 rounded">Kosong</p>
+                        </div>
+                    </div>
+
+                    <!-- Tahap Packing -->
+                    <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
+                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
+                            4. Packing <span id="badge-packing" class="bg-green-200 text-green-800 text-xs rounded-full px-2 py-0.5 font-bold">1</span>
+                        </h3>
+                        <div id="container-packing" class="min-h-[100px]">
+                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-green-500 mb-2 transition-all duration-300">
+                                <p class="font-bold text-sm text-gray-800">ORD-004</p>
+                                <p class="text-xs text-gray-500 mb-2">Celana Chino (75 pcs)</p>
+                                <button onclick="selesaiProduksi(this, 'packing')" class="btn-action w-full bg-green-500 hover:bg-green-600 text-white text-xs py-1.5 rounded font-bold transition shadow-sm"><i class="fas fa-check"></i> Masuk Gudang</button>
+                            </div>
                         </div>
                     </div>
 
@@ -222,7 +227,6 @@
                 <h2 class="text-xl sm:text-2xl font-bold mb-4">Pencatatan Keuangan</h2>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                     
-                    <!-- Form Input Keuangan -->
                     <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 h-fit">
                         <h3 class="font-bold mb-4 border-b pb-2 text-sm sm:text-base"><i class="fas fa-pen text-blue-600"></i> Catat Transaksi Baru</h3>
                         <form id="form-keuangan">
@@ -264,7 +268,6 @@
                         </form>
                     </div>
 
-                    <!-- Laporan Arus Kas -->
                     <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100 lg:col-span-2">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h3 class="font-bold text-sm sm:text-base">Arus Kas Terakhir</h3>
@@ -283,7 +286,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tabel-keuangan">
-                                    <!-- Data dummy awal -->
                                     <tr class="border-b">
                                         <td class="py-2.5 px-2">27 Sep 2026</td>
                                         <td class="py-2.5 px-2 font-medium">Penjualan Shopee</td>
@@ -311,188 +313,7 @@
         </main>
     </div>
 
-    <!-- SCRIPT LOGIKA APLIKASI -->
-    <script>
-        // Set default tanggal ke hari ini untuk form keuangan
-        document.getElementById('tgl-keuangan').valueAsDate = new Date();
-
-        // --- 1. Logika Navigasi Tab ---
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => {
-                el.classList.add('hidden'); el.classList.remove('block', 'flex');
-            });
-            
-            const targetTab = document.getElementById(tabId);
-            targetTab.classList.remove('hidden');
-            // Tab produksi butuh class flex agar tinggi kanban board maksimal
-            if(tabId === 'produksi') {
-                targetTab.classList.add('flex', 'flex-col');
-            } else {
-                targetTab.classList.add('block');
-            }
-
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-blue-700', 'border-t-2', 'border-l-4', 'border-blue-700');
-                btn.classList.add('text-gray-500', 'border-transparent');
-            });
-
-            const activeBtn = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
-            if(activeBtn) {
-                activeBtn.classList.remove('text-gray-500', 'border-transparent');
-                if (window.innerWidth >= 768) {
-                    activeBtn.classList.add('text-blue-700', 'border-l-4', 'border-blue-700');
-                } else {
-                    activeBtn.classList.add('text-blue-700', 'border-t-2', 'border-blue-700');
-                }
-            }
-
-            if(tabId !== 'stok' && typeof isScanning !== 'undefined' && isScanning) {
-                stopScanner();
-            }
-        }
-
-        // --- 2. Logika Scanner Barcode (Sama seperti sebelumnya) ---
-        let html5QrCode;
-        let isScanning = false;
-        let lastScannedSku = "";
-
-        const btnStartScan = document.getElementById('btn-start-scan');
-        const btnSimpanStok = document.getElementById('btn-simpan-stok');
-        const resultContainer = document.getElementById('scan-result-container');
-        const scannedSkuText = document.getElementById('scanned-sku');
-        const tabelRiwayat = document.getElementById('tabel-riwayat');
-        const placeholder = document.getElementById('kamera-placeholder');
-        const scanLine = document.getElementById('scan-line');
-
-        document.addEventListener("DOMContentLoaded", () => {
-            html5QrCode = new Html5Qrcode("reader");
-            switchTab('dashboard'); // Default menu awal
-        });
-
-        function startScanner() {
-            const config = { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1.0 };
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-            .then(() => {
-                isScanning = true;
-                placeholder.classList.add('hidden');
-                scanLine.style.display = 'block';
-                btnStartScan.innerHTML = '<i class="fas fa-stop mr-1"></i> Berhenti';
-                btnStartScan.classList.replace('bg-blue-600', 'bg-red-600');
-                btnStartScan.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
-                resultContainer.classList.add('hidden');
-                btnSimpanStok.disabled = true;
-                btnSimpanStok.classList.add('opacity-50', 'cursor-not-allowed');
-            })
-            .catch((err) => {
-                alert("Gagal akses kamera. Izinkan kamera di browser.");
-            });
-        }
-
-        function stopScanner() {
-            if (html5QrCode && isScanning) {
-                html5QrCode.stop().then(() => {
-                    isScanning = false;
-                    placeholder.classList.remove('hidden');
-                    scanLine.style.display = 'none';
-                    btnStartScan.innerHTML = '<i class="fas fa-play mr-1"></i> Mulai Scan';
-                    btnStartScan.classList.replace('bg-red-600', 'bg-blue-600');
-                    btnStartScan.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
-                });
-            }
-        }
-
-        btnStartScan.addEventListener('click', () => { isScanning ? stopScanner() : startScanner(); });
-
-        function onScanSuccess(decodedText) {
-            if(window.navigator && window.navigator.vibrate) navigator.vibrate(100);
-            lastScannedSku = decodedText;
-            scannedSkuText.innerText = lastScannedSku;
-            resultContainer.classList.remove('hidden');
-            btnSimpanStok.disabled = false;
-            btnSimpanStok.classList.remove('opacity-50', 'cursor-not-allowed');
-            stopScanner();
-            btnStartScan.innerHTML = '<i class="fas fa-redo mr-1"></i> Scan Ulang';
-        }
-
-        btnSimpanStok.addEventListener('click', () => {
-            const selectEl = document.getElementById('jenis-transaksi');
-            const jenisFull = selectEl.options[selectEl.selectedIndex].text;
-            const jenisKata = jenisFull.split(' ')[0];
-            const waktu = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-            
-            let badgeClass = jenisKata === "Masuk" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
-
-            const newRow = document.createElement('tr');
-            newRow.className = "border-b bg-yellow-100 transition-colors duration-1000";
-            newRow.innerHTML = `
-                <td class="py-2.5 px-2 font-mono text-blue-600">${lastScannedSku}</td>
-                <td class="py-2.5 px-2"><span class="${badgeClass} text-[10px] sm:text-xs font-semibold px-2 py-1 rounded">${jenisKata}</span></td>
-                <td class="py-2.5 px-2 text-gray-500">${waktu}</td>
-            `;
-            tabelRiwayat.prepend(newRow);
-            setTimeout(() => newRow.classList.remove('bg-yellow-100'), 1500);
-
-            resultContainer.classList.add('hidden');
-            btnSimpanStok.disabled = true;
-            btnSimpanStok.classList.add('opacity-50', 'cursor-not-allowed');
-            alert(`Stok ${jenisKata} berhasil dicatat.`);
-            startScanner();
-        });
-
-        // --- 3. Logika Form Keuangan ---
-        const formKeuangan = document.getElementById('form-keuangan');
-        const tabelKeuangan = document.getElementById('tabel-keuangan');
-        let saldoSaatIni = 12500000; // Saldo simulasi
-
-        formKeuangan.addEventListener('submit', function(e) {
-            e.preventDefault(); // Mencegah reload halaman
-            
-            // Ambil data dari form
-            const jenis = document.querySelector('input[name="jenis_uang"]:checked').value;
-            const kategori = document.getElementById('kategori-keuangan').value;
-            const tanggalInput = document.getElementById('tgl-keuangan').value;
-            const jumlah = parseInt(document.getElementById('jumlah-keuangan').value);
-            
-            if(!jumlah || isNaN(jumlah)) return;
-
-            // Format Tanggal (Contoh: 27 Sep 2026)
-            const dateObj = new Date(tanggalInput);
-            const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-            const tglFormatted = `${dateObj.getDate()} ${namaBulan[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-
-            // Format Uang
-            const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
-            
-            let htmlNominal = "";
-            if(jenis === "Pemasukan") {
-                saldoSaatIni += jumlah;
-                htmlNominal = `<td class="py-2.5 px-2 text-right text-green-600 font-bold">+ ${formatter.format(jumlah)}</td>`;
-            } else {
-                saldoSaatIni -= jumlah;
-                htmlNominal = `<td class="py-2.5 px-2 text-right text-red-600 font-bold">- ${formatter.format(jumlah)}</td>`;
-            }
-
-            // Tambahkan baris baru ke tabel
-            const newRow = document.createElement('tr');
-            newRow.className = "border-b bg-yellow-50 transition-colors duration-1000";
-            newRow.innerHTML = `
-                <td class="py-2.5 px-2">${tglFormatted}</td>
-                <td class="py-2.5 px-2 font-medium">${kategori}</td>
-                ${htmlNominal}
-            `;
-            
-            tabelKeuangan.prepend(newRow);
-            
-            // Update Saldo Kas
-            document.getElementById('total-saldo').innerText = formatter.format(saldoSaatIni);
-
-            // Hilangkan efek kuning setelah 1 detik
-            setTimeout(() => newRow.classList.remove('bg-yellow-50'), 1500);
-
-            // Reset Input Nominal
-            document.getElementById('jumlah-keuangan').value = "";
-            alert('Data keuangan berhasil disimpan sementara di layar.');
-        });
-    </script>
+    <!-- Script Terpisah -->
+    <script src="app.js"></script>
 </body>
 </html>
