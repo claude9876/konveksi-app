@@ -2,271 +2,123 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Manajemen Konveksi & Finance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistem Manajemen Konveksi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Library Scanner HTML5-QRCode -->
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        /* Mencegah highlight biru saat tap di HP */
+        * { -webkit-tap-highlight-color: transparent; }
+        /* Animasi garis scan */
+        .scan-line {
+            width: 100%; height: 2px; background: #3b82f6; position: absolute;
+            top: 50%; left: 0; box-shadow: 0 0 4px #3b82f6;
+            animation: scan 2s infinite linear; display: none; z-index: 10;
+        }
+        @keyframes scan {
+            0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-50 text-gray-800 font-sans pb-20 md:pb-0">
 
-    <!-- Navbar Mobile / Header -->
-    <header class="bg-blue-800 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-xl font-bold"><i class="fas fa-tshirt mr-2"></i> Konveksi App</h1>
-        <select class="bg-blue-700 text-white text-sm p-2 rounded border border-blue-600 focus:outline-none">
+    <!-- Header Mobile Friendly -->
+    <header class="bg-blue-800 text-white p-3 shadow-md flex justify-between items-center sticky top-0 z-50">
+        <h1 class="text-base sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis flex-shrink-0 mr-2">
+            <i class="fas fa-tshirt mr-1"></i> Konveksi App
+        </h1>
+        <select class="bg-blue-700 text-white text-xs sm:text-sm p-1.5 rounded border border-blue-600 focus:outline-none max-w-[140px] sm:max-w-none text-ellipsis">
             <option>Owner (Akses Penuh)</option>
             <option>Admin Gudang</option>
             <option>Staf Produksi</option>
-            <option>Bagian Keuangan</option>
         </select>
     </header>
 
     <div class="flex flex-col md:flex-row min-h-screen">
-        <!-- Sidebar Navigation -->
-        <nav class="bg-white w-full md:w-64 border-b md:border-r border-gray-200 order-last md:order-first fixed bottom-0 md:relative z-40 md:min-h-screen flex md:flex-col justify-around md:justify-start shadow-[0_-2px_10px_rgba(0,0,0,0.1)] md:shadow-none">
-            <button onclick="switchTab('dashboard')" class="nav-btn w-full text-center md:text-left p-4 hover:bg-blue-50 text-blue-700 font-semibold border-b-2 md:border-b-0 border-blue-700">
-                <i class="fas fa-home md:mr-2 text-xl md:text-base block md:inline mb-1 md:mb-0"></i> <span class="text-xs md:text-base">Dashboard</span>
+        <!-- Bottom Nav (Mobile) / Sidebar (Desktop) -->
+        <nav class="bg-white w-full md:w-64 border-t md:border-t-0 md:border-r border-gray-200 fixed bottom-0 md:relative z-40 md:min-h-screen flex md:flex-col justify-around md:justify-start shadow-[0_-2px_10px_rgba(0,0,0,0.05)] md:shadow-none pb-safe">
+            <button onclick="switchTab('dashboard')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-blue-700 font-semibold border-t-2 md:border-t-0 md:border-l-4 border-blue-700 hover:bg-blue-50">
+                <i class="fas fa-home text-xl md:mr-3 mb-1 md:mb-0"></i> 
+                <span class="text-[10px] md:text-base">Dashboard</span>
             </button>
-            <button onclick="switchTab('stok')" class="nav-btn w-full text-center md:text-left p-4 hover:bg-blue-50 text-gray-600">
-                <i class="fas fa-barcode md:mr-2 text-xl md:text-base block md:inline mb-1 md:mb-0"></i> <span class="text-xs md:text-base">Stok & Scan</span>
+            <button onclick="switchTab('stok')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-gray-500 border-t-2 md:border-t-0 md:border-l-4 border-transparent hover:bg-blue-50">
+                <i class="fas fa-barcode text-xl md:mr-3 mb-1 md:mb-0"></i> 
+                <span class="text-[10px] md:text-base">Stok & Scan</span>
             </button>
-            <button onclick="switchTab('produksi')" class="nav-btn w-full text-center md:text-left p-4 hover:bg-blue-50 text-gray-600">
-                <i class="fas fa-cut md:mr-2 text-xl md:text-base block md:inline mb-1 md:mb-0"></i> <span class="text-xs md:text-base">Produksi</span>
+            <button onclick="switchTab('produksi')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-gray-500 border-t-2 md:border-t-0 md:border-l-4 border-transparent hover:bg-blue-50">
+                <i class="fas fa-cut text-xl md:mr-3 mb-1 md:mb-0"></i> 
+                <span class="text-[10px] md:text-base">Produksi</span>
             </button>
-            <button onclick="switchTab('keuangan')" class="nav-btn w-full text-center md:text-left p-4 hover:bg-blue-50 text-gray-600">
-                <i class="fas fa-wallet md:mr-2 text-xl md:text-base block md:inline mb-1 md:mb-0"></i> <span class="text-xs md:text-base">Keuangan</span>
+            <button onclick="switchTab('keuangan')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-gray-500 border-t-2 md:border-t-0 md:border-l-4 border-transparent hover:bg-blue-50">
+                <i class="fas fa-wallet text-xl md:mr-3 mb-1 md:mb-0"></i> 
+                <span class="text-[10px] md:text-base">Keuangan</span>
             </button>
         </nav>
 
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 md:p-6 mb-20 md:mb-0">
+        <main class="flex-1 p-3 sm:p-4 md:p-6 w-full max-w-full overflow-hidden">
             
-            <!-- SECTION: DASHBOARD -->
-            <section id="dashboard" class="tab-content block">
-                <h2 class="text-2xl font-bold mb-4">Ringkasan Sistem</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
-                        <p class="text-sm text-gray-500">Total Stok Barang Jadi</p>
-                        <h3 class="text-2xl font-bold">1,240 <span class="text-sm font-normal">pcs</span></h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
-                        <p class="text-sm text-gray-500">Order Produksi Aktif</p>
-                        <h3 class="text-2xl font-bold">5 <span class="text-sm font-normal">batch</span></h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
-                        <p class="text-sm text-gray-500">Laba Bulan Ini</p>
-                        <h3 class="text-2xl font-bold">Rp 12.5M</h3>
-                    </div>
-                </div>
-
-                <!-- Notifikasi Stok Menipis -->
-                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <strong class="font-bold"><i class="fas fa-exclamation-triangle"></i> Peringatan Stok!</strong>
-                    <span class="block sm:inline"> Kain Katun Combed 30s Hitam mendekati batas minimum (Sisa 2 Roll).</span>
-                </div>
-            </section>
-
             <!-- SECTION: STOK & SCAN BARCODE -->
             <section id="stok" class="tab-content hidden">
-                <h2 class="text-2xl font-bold mb-4">Manajemen Stok & Barcode</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
+                <h2 class="text-xl sm:text-2xl font-bold mb-4">Manajemen Stok & Barcode</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <!-- Area Scanner -->
-                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                        <h3 class="font-bold mb-4 border-b pb-2"><i class="fas fa-camera"></i> Scan Barcode Gudang</h3>
+                    <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100">
+                        <h3 class="font-bold mb-3 border-b pb-2 text-sm sm:text-base"><i class="fas fa-camera text-blue-600"></i> Scan Barcode Gudang</h3>
                         
-                        <!-- Tempat Kamera Scanner Muncul -->
-                        <div id="reader" class="w-full mb-4 overflow-hidden rounded-lg bg-black text-center relative min-h-[150px] flex items-center justify-center">
-                            <p class="text-white text-sm opacity-50 absolute z-0">[ Area Kamera Scanner ]</p>
+                        <!-- Container Kamera -->
+                        <div class="relative w-full bg-gray-100 rounded-lg overflow-hidden mb-4 min-h-[200px] sm:min-h-[250px] flex items-center justify-center border-2 border-dashed border-gray-300">
+                            <div id="reader" class="w-full h-full absolute inset-0"></div>
+                            <div id="scan-line" class="scan-line"></div>
+                            <p id="kamera-placeholder" class="text-gray-400 text-xs sm:text-sm z-0 relative pointer-events-none text-center px-4">
+                                <i class="fas fa-qrcode text-3xl mb-2 block"></i>
+                                Kamera Siap Digunakan
+                            </p>
                         </div>
                         
                         <!-- Hasil Scan -->
-                        <div id="scan-result-container" class="hidden bg-green-50 border border-green-200 p-3 rounded mb-4 relative z-10">
-                            <p class="text-sm text-green-800">SKU Terdeteksi:</p>
-                            <p id="scanned-sku" class="text-xl font-mono font-bold text-green-900">-</p>
+                        <div id="scan-result-container" class="hidden bg-green-50 border border-green-200 p-2 sm:p-3 rounded mb-4">
+                            <p class="text-xs text-green-800 mb-1">SKU Terdeteksi:</p>
+                            <p id="scanned-sku" class="text-lg sm:text-xl font-mono font-bold text-green-900 break-all">-</p>
                         </div>
                         
-                        <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Jenis Transaksi Stok</label>
-                        <select id="jenis-transaksi" class="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jenis Transaksi</label>
+                        <select id="jenis-transaksi" class="w-full p-2.5 border border-gray-300 rounded-md mb-4 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                             <option value="MASUK_BAHAN">Masuk (Bahan Baku Tiba)</option>
                             <option value="KELUAR_PRODUKSI">Keluar (Pakai Produksi)</option>
                             <option value="MASUK_BARANGJADI">Masuk (Stok Barang Jadi)</option>
                             <option value="KELUAR_KIRIM">Keluar (Kirim Pembeli)</option>
-                            <option value="RETUR_PEMBELI">Retur (Retur Pembeli)</option>
                         </select>
                         
                         <div class="flex gap-2">
-                            <button id="btn-start-scan" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                <i class="fas fa-play"></i> Mulai Scan
+                            <button id="btn-start-scan" class="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 px-2 rounded-md text-sm transition-colors">
+                                <i class="fas fa-play mr-1"></i> Mulai Scan
                             </button>
-                            <button id="btn-simpan-stok" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed" disabled>
-                                <i class="fas fa-save"></i> Simpan
+                            <button id="btn-simpan-stok" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-2 rounded-md text-sm opacity-50 cursor-not-allowed transition-all" disabled>
+                                <i class="fas fa-save mr-1"></i> Simpan
                             </button>
                         </div>
                     </div>
 
                     <!-- Riwayat Transaksi Terakhir -->
-                    <div class="bg-white p-4 rounded-lg shadow-sm overflow-auto">
-                        <h3 class="font-bold mb-4 border-b pb-2">Riwayat Transaksi Terakhir</h3>
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 text-gray-600">
-                                <tr>
-                                    <th class="py-2 px-2">SKU</th>
-                                    <th class="py-2 px-2">Jenis</th>
-                                    <th class="py-2 px-2">Waktu</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabel-riwayat">
-                                <tr class="border-b">
-                                    <td class="py-2 px-2 font-mono text-blue-600">BRG-JD-001</td>
-                                    <td class="py-2 px-2"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Masuk</span></td>
-                                    <td class="py-2 px-2 text-gray-500">10:32</td>
-                                </tr>
-                                <tr class="border-b">
-                                    <td class="py-2 px-2 font-mono text-blue-600">BHN-KN-005</td>
-                                    <td class="py-2 px-2"><span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">Keluar</span></td>
-                                    <td class="py-2 px-2 text-gray-500">09:15</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION: PRODUKSI -->
-            <section id="produksi" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold">Alur Produksi</h2>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm rounded font-bold"><i class="fas fa-plus"></i> Order Baru</button>
-                </div>
-                
-                <!-- Papan Kanban Status Produksi -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-x-auto pb-4">
-                    <!-- Kolom Potong -->
-                    <div class="bg-gray-50 rounded-lg p-3 min-w-[250px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 flex justify-between">1. Potong <span class="bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-1">2 Order</span></h3>
-                        
-                        <div class="bg-white p-3 rounded shadow-sm border-l-4 border-blue-500 mb-2">
-                            <p class="font-bold text-sm">ORD-202610-01</p>
-                            <p class="text-xs text-gray-600 mb-2">Diora Pants (100 pcs)</p>
-                            <button class="w-full bg-gray-100 hover:bg-gray-200 text-xs py-1.5 rounded border font-semibold">Pindah ke Jahit &rarr;</button>
-                        </div>
-                        <div class="bg-white p-3 rounded shadow-sm border-l-4 border-blue-500 mb-2">
-                            <p class="font-bold text-sm">ORD-202610-05</p>
-                            <p class="text-xs text-gray-600 mb-2">Sakura Dress (75 pcs)</p>
-                            <button class="w-full bg-gray-100 hover:bg-gray-200 text-xs py-1.5 rounded border font-semibold">Pindah ke Jahit &rarr;</button>
-                        </div>
-                    </div>
-
-                    <!-- Kolom Jahit -->
-                    <div class="bg-gray-50 rounded-lg p-3 min-w-[250px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 flex justify-between">2. Jahit <span class="bg-yellow-100 text-yellow-800 text-xs rounded-full px-2 py-1">1 Order</span></h3>
-                        
-                        <div class="bg-white p-3 rounded shadow-sm border-l-4 border-yellow-500 mb-2">
-                            <p class="font-bold text-sm">ORD-202610-02</p>
-                            <p class="text-xs text-gray-600 mb-2">Celana Chino (50 pcs)</p>
-                            <button class="w-full bg-gray-100 hover:bg-gray-200 text-xs py-1.5 rounded border font-semibold">Pindah ke QC &rarr;</button>
-                        </div>
-                    </div>
-
-                    <!-- Kolom QC -->
-                    <div class="bg-gray-50 rounded-lg p-3 min-w-[250px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 flex justify-between">3. QC <span class="bg-red-100 text-red-800 text-xs rounded-full px-2 py-1">0 Order</span></h3>
-                        <p class="text-xs text-center text-gray-400 py-4 italic">Tidak ada order di tahap ini</p>
-                    </div>
-
-                    <!-- Kolom Packing -->
-                    <div class="bg-gray-50 rounded-lg p-3 min-w-[250px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 flex justify-between">4. Packing <span class="bg-green-100 text-green-800 text-xs rounded-full px-2 py-1">1 Order</span></h3>
-                        
-                        <div class="bg-white p-3 rounded shadow-sm border-l-4 border-green-500 mb-2">
-                            <p class="font-bold text-sm">ORD-202609-15</p>
-                            <p class="text-xs text-gray-600 mb-2">Kemeja Flanel (200 pcs)</p>
-                            <button class="w-full bg-green-500 hover:bg-green-600 text-white text-xs py-1.5 rounded font-bold">Selesai & Masuk Gudang</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION: KEUANGAN -->
-            <section id="keuangan" class="tab-content hidden">
-                <h2 class="text-2xl font-bold mb-4">Pencatatan Keuangan</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    
-                    <!-- Form Input Keuangan -->
-                    <div class="bg-white p-4 rounded-lg shadow-sm md:col-span-1 border border-gray-200 h-fit">
-                        <h3 class="font-bold mb-4 border-b pb-2">Catat Transaksi Baru</h3>
-                        <form onsubmit="event.preventDefault(); alert('Simulasi: Data Keuangan Disimpan!');">
-                            <div class="mb-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Transaksi</label>
-                                <div class="flex gap-4">
-                                    <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="jenis_uang" class="mr-1" checked> Pemasukan</label>
-                                    <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="jenis_uang" class="mr-1"> Pengeluaran</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                                <select class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-blue-500">
-                                    <option>Penjualan Langsung</option>
-                                    <option>Transfer Marketplace (Shopee/TikTok)</option>
-                                    <option>Pembelian Bahan Baku</option>
-                                    <option>Upah Produksi/Borongan</option>
-                                    <option>Operasional (Listrik, Sewa)</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                                <input type="date" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-blue-500" id="tgl-keuangan">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah (Rp)</label>
-                                <input type="number" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-blue-500" placeholder="Contoh: 1500000" required>
-                            </div>
-                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">
-                                <i class="fas fa-save"></i> Simpan Transaksi
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Laporan Singkat & Riwayat -->
-                    <div class="bg-white p-4 rounded-lg shadow-sm md:col-span-2 border border-gray-200">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 class="font-bold">Arus Kas Terakhir</h3>
-                            <button class="text-green-600 text-sm hover:underline font-semibold"><i class="fas fa-file-excel"></i> Export Excel</button>
-                        </div>
+                    <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100">
+                        <h3 class="font-bold mb-3 border-b pb-2 text-sm sm:text-base">Riwayat Transaksi Terakhir</h3>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left">
+                            <table class="w-full text-xs sm:text-sm text-left whitespace-nowrap">
                                 <thead class="bg-gray-50 text-gray-600 border-b">
                                     <tr>
-                                        <th class="py-2 px-2">Tanggal</th>
-                                        <th class="py-2 px-2">Kategori</th>
-                                        <th class="py-2 px-2 text-right">Pemasukan</th>
-                                        <th class="py-2 px-2 text-right">Pengeluaran</th>
+                                        <th class="py-2 px-2 font-medium">SKU</th>
+                                        <th class="py-2 px-2 font-medium">Jenis</th>
+                                        <th class="py-2 px-2 font-medium">Waktu</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="tabel-riwayat">
                                     <tr class="border-b">
-                                        <td class="py-3 px-2">27 Sep 2026</td>
-                                        <td class="py-3 px-2 font-medium">Penjualan Shopee</td>
-                                        <td class="py-3 px-2 text-right text-green-600 font-semibold">Rp 2.500.000</td>
-                                        <td class="py-3 px-2 text-right text-red-600">-</td>
-                                    </tr>
-                                    <tr class="border-b">
-                                        <td class="py-3 px-2">26 Sep 2026</td>
-                                        <td class="py-3 px-2 font-medium">Upah Borongan (Jahit)</td>
-                                        <td class="py-3 px-2 text-right text-green-600">-</td>
-                                        <td class="py-3 px-2 text-right text-red-600 font-semibold">Rp 800.000</td>
-                                    </tr>
-                                    <tr class="border-b">
-                                        <td class="py-3 px-2">25 Sep 2026</td>
-                                        <td class="py-3 px-2 font-medium">Pembelian Kain Katun</td>
-                                        <td class="py-3 px-2 text-right text-green-600">-</td>
-                                        <td class="py-3 px-2 text-right text-red-600 font-semibold">Rp 3.200.000</td>
-                                    </tr>
-                                    <tr class="border-b bg-gray-50 font-bold">
-                                        <td colspan="2" class="py-3 px-2 text-right">Saldo Kas Saat Ini:</td>
-                                        <td colspan="2" class="py-3 px-2 text-right text-blue-700 text-lg">Rp 12.500.000</td>
+                                        <td class="py-2.5 px-2 font-mono text-blue-600">BRG-JD-001</td>
+                                        <td class="py-2.5 px-2"><span class="bg-green-100 text-green-800 text-[10px] sm:text-xs px-2 py-1 rounded font-semibold">Masuk</span></td>
+                                        <td class="py-2.5 px-2 text-gray-500">10:32</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -274,14 +126,16 @@
                     </div>
                 </div>
             </section>
+
+            <!-- SECTION: DASHBOARD, PRODUKSI, KEUANGAN (Disederhanakan untuk contoh) -->
+            <section id="dashboard" class="tab-content block"><div class="p-4 bg-white rounded-lg shadow-sm text-center">Modul Dashboard Aktif</div></section>
+            <section id="produksi" class="tab-content hidden"><div class="p-4 bg-white rounded-lg shadow-sm text-center">Modul Produksi Aktif</div></section>
+            <section id="keuangan" class="tab-content hidden"><div class="p-4 bg-white rounded-lg shadow-sm text-center">Modul Keuangan Aktif</div></section>
         </main>
     </div>
 
     <!-- SCRIPT LOGIKA APLIKASI -->
     <script>
-        // Set default date input keuangan ke hari ini
-        document.getElementById('tgl-keuangan').valueAsDate = new Date();
-
         // --- 1. Logika Navigasi Tab ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => {
@@ -290,31 +144,33 @@
             document.getElementById(tabId).classList.remove('hidden');
             document.getElementById(tabId).classList.add('block');
 
+            // Reset warna tombol navigasi (Mobile & Desktop)
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-blue-700', 'font-semibold', 'border-b-2', 'border-blue-700');
-                btn.classList.add('text-gray-600');
+                btn.classList.remove('text-blue-700', 'border-t-2', 'border-l-4', 'border-blue-700');
+                btn.classList.add('text-gray-500', 'border-transparent');
             });
 
+            // Highlight tombol aktif
             const activeBtn = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
             if(activeBtn) {
-                activeBtn.classList.remove('text-gray-600');
-                activeBtn.classList.add('text-blue-700', 'font-semibold', 'border-b-2', 'border-blue-700');
+                activeBtn.classList.remove('text-gray-500', 'border-transparent');
+                
+                // Cek layar lebar atau mobile untuk posisi border
+                if (window.innerWidth >= 768) {
+                    activeBtn.classList.add('text-blue-700', 'border-l-4', 'border-blue-700');
+                } else {
+                    activeBtn.classList.add('text-blue-700', 'border-t-2', 'border-blue-700');
+                }
             }
 
-            // Hentikan kamera jika pindah dari tab Stok untuk menghemat baterai
-            if(tabId !== 'stok' && html5QrcodeScanner) {
-                try {
-                    html5QrcodeScanner.clear();
-                    isScanning = false;
-                    document.getElementById('btn-start-scan').innerHTML = '<i class="fas fa-play"></i> Mulai Scan';
-                    document.getElementById('btn-start-scan').classList.replace('bg-red-600', 'bg-blue-600');
-                    document.getElementById('btn-start-scan').classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
-                } catch(e) {}
+            // Hentikan kamera jika pindah menu untuk menghemat baterai HP
+            if(tabId !== 'stok' && isScanning) {
+                stopScanner();
             }
         }
 
-        // --- 2. Logika Scanner Barcode (html5-qrcode) ---
-        let html5QrcodeScanner = null;
+        // --- 2. Logika Scanner Barcode (Menggunakan class murni Html5Qrcode) ---
+        let html5QrCode;
         let isScanning = false;
         let lastScannedSku = "";
 
@@ -323,34 +179,67 @@
         const resultContainer = document.getElementById('scan-result-container');
         const scannedSkuText = document.getElementById('scanned-sku');
         const tabelRiwayat = document.getElementById('tabel-riwayat');
+        const placeholder = document.getElementById('kamera-placeholder');
+        const scanLine = document.getElementById('scan-line');
 
-        btnStartScan.addEventListener('click', () => {
-            if (isScanning) {
-                html5QrcodeScanner.clear();
-                isScanning = false;
-                btnStartScan.innerHTML = '<i class="fas fa-play"></i> Mulai Scan';
-                btnStartScan.classList.replace('bg-red-600', 'bg-blue-600');
-                btnStartScan.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
-            } else {
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    "reader", 
-                    { fps: 10, qrbox: { width: 250, height: 150 }, disableFlip: false }, 
-                    false
-                );
-                
-                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        // Inisialisasi object saat halaman dimuat
+        document.addEventListener("DOMContentLoaded", () => {
+            // Langsung target ke elemen reader (bukan via scanner class yang bawa UI jelek)
+            html5QrCode = new Html5Qrcode("reader");
+            // Set default tab ke stok untuk test
+            switchTab('stok'); 
+        });
+
+        function startScanner() {
+            // Minta akses kamera belakang secara spesifik (environment)
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+            
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+            .then(() => {
                 isScanning = true;
-                btnStartScan.innerHTML = '<i class="fas fa-stop"></i> Hentikan Kamera';
+                placeholder.classList.add('hidden');
+                scanLine.style.display = 'block'; // Tampilkan animasi garis
+                
+                btnStartScan.innerHTML = '<i class="fas fa-stop mr-1"></i> Hentikan Kamera';
                 btnStartScan.classList.replace('bg-blue-600', 'bg-red-600');
                 btnStartScan.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
                 
                 resultContainer.classList.add('hidden');
                 btnSimpan.disabled = true;
                 btnSimpan.classList.add('opacity-50', 'cursor-not-allowed');
+            })
+            .catch((err) => {
+                alert("Gagal mengakses kamera. Pastikan Anda memberikan izin kamera pada browser.");
+                console.error(err);
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    isScanning = false;
+                    placeholder.classList.remove('hidden');
+                    scanLine.style.display = 'none';
+                    
+                    btnStartScan.innerHTML = '<i class="fas fa-play mr-1"></i> Mulai Scan';
+                    btnStartScan.classList.replace('bg-red-600', 'bg-blue-600');
+                    btnStartScan.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
+                }).catch(err => console.error("Error stopping scanner", err));
+            }
+        }
+
+        btnStartScan.addEventListener('click', () => {
+            if (isScanning) {
+                stopScanner();
+            } else {
+                startScanner();
             }
         });
 
-        function onScanSuccess(decodedText, decodedResult) {
+        function onScanSuccess(decodedText) {
+            // Bunyikan beep singkat (opsional, berfungsi di beberapa browser mobile)
+            if(window.navigator && window.navigator.vibrate) navigator.vibrate(100);
+
             lastScannedSku = decodedText;
             scannedSkuText.innerText = lastScannedSku;
             resultContainer.classList.remove('hidden');
@@ -358,48 +247,40 @@
             btnSimpan.disabled = false;
             btnSimpan.classList.remove('opacity-50', 'cursor-not-allowed');
             
-            // Hentikan scan agar tidak dobel
-            html5QrcodeScanner.clear();
-            isScanning = false;
-            btnStartScan.innerHTML = '<i class="fas fa-play"></i> Scan Ulang';
-            btnStartScan.classList.replace('bg-red-600', 'bg-blue-600');
-            btnStartScan.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
+            // Hentikan kamera sementara agar user bisa menekan simpan
+            stopScanner();
+            btnStartScan.innerHTML = '<i class="fas fa-redo mr-1"></i> Scan Ulang';
         }
 
-        function onScanFailure(error) {
-            // Berjalan terus menerus saat kamera mencari barcode (dibiarkan kosong)
-        }
-
-        // --- 3. Logika Simpan Transaksi Stok (Simulasi DOM) ---
+        // --- 3. Logika Simpan Transaksi ---
         btnSimpan.addEventListener('click', () => {
             const selectEl = document.getElementById('jenis-transaksi');
             const jenisTransaksiLengkap = selectEl.options[selectEl.selectedIndex].text;
-            const jenisTransaksiKataPertama = jenisTransaksiLengkap.split(' ')[0]; // Ambil kata Masuk/Keluar/Retur
+            const jenisTransaksiKataPertama = jenisTransaksiLengkap.split(' ')[0];
             const waktu = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
             
             let badgeClass = "bg-gray-100 text-gray-800";
-            if(jenisTransaksiKataPertama === "Masuk" || jenisTransaksiKataPertama === "Retur") {
-                badgeClass = "bg-green-100 text-green-800";
-            } else if(jenisTransaksiKataPertama === "Keluar") {
-                badgeClass = "bg-red-100 text-red-800";
-            }
+            if(jenisTransaksiKataPertama === "Masuk") badgeClass = "bg-green-100 text-green-800";
+            else if(jenisTransaksiKataPertama === "Keluar") badgeClass = "bg-red-100 text-red-800";
 
             const newRow = document.createElement('tr');
             newRow.className = "border-b bg-yellow-100 transition-colors duration-1000";
             newRow.innerHTML = `
-                <td class="py-2 px-2 font-mono text-blue-600">${lastScannedSku}</td>
-                <td class="py-2 px-2"><span class="${badgeClass} text-xs font-bold px-2 py-1 rounded">${jenisTransaksiKataPertama}</span></td>
-                <td class="py-2 px-2 text-gray-500">${waktu}</td>
+                <td class="py-2.5 px-2 font-mono text-blue-600 break-all max-w-[120px] truncate">${lastScannedSku}</td>
+                <td class="py-2.5 px-2"><span class="${badgeClass} text-[10px] sm:text-xs font-semibold px-2 py-1 rounded">${jenisTransaksiKataPertama}</span></td>
+                <td class="py-2.5 px-2 text-gray-500">${waktu}</td>
             `;
             
             tabelRiwayat.prepend(newRow);
             setTimeout(() => { newRow.classList.remove('bg-yellow-100'); }, 1500);
 
-            alert(`Transaksi berhasil: ${lastScannedSku} (${jenisTransaksiLengkap})`);
             resultContainer.classList.add('hidden');
             btnSimpan.disabled = true;
             btnSimpan.classList.add('opacity-50', 'cursor-not-allowed');
             lastScannedSku = "";
+            
+            // Opsional: Otomatis mulai kamera lagi setelah simpan untuk kerja cepat
+            startScanner();
         });
     </script>
 </body>
