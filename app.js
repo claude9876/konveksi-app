@@ -9,7 +9,7 @@ let html5QrCode = null;
 let isScanning = false;
 let lastScannedSku = "";
 
-const STORAGE_KEY = "konveksi_app_v1";
+const STORAGE_KEY = "konveksi_app_v2";
 
 const defaultState = {
     saldo: 12500000,

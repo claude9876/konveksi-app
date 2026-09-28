@@ -2,253 +2,410 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem Manajemen Konveksi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e1b4b">
+    <title>KonveksiApp — Sistem Manajemen Konveksi</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',
+                            500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81',950:'#1e1b4b'
+                        }
+                    },
+                    boxShadow: {
+                        card: '0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06)',
+                        lift: '0 4px 12px -2px rgba(16,24,40,.10), 0 2px 6px -2px rgba(16,24,40,.06)'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Favicon (inline SVG) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3EK%3C/text%3E%3C/svg%3E">
     <!-- HTML5-QRCode Scanner -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
+        :root { --brand:#4f46e5; }
         * { -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
+        body { font-feature-settings: "cv11", "ss01"; }
+
+        /* Area scan */
         .scan-line {
-            width: 100%; height: 2px; background: #3b82f6; position: absolute;
-            top: 50%; left: 0; box-shadow: 0 0 4px #3b82f6;
-            animation: scan 2s infinite linear; display: none; z-index: 10;
+            width: 88%; margin: 0 6%; height: 2px; background: var(--brand); position: absolute;
+            top: 50%; left: 0; box-shadow: 0 0 12px var(--brand);
+            animation: scan 2.2s cubic-bezier(.4,0,.6,1) infinite; display: none; z-index: 10;
         }
-        @keyframes scan {
-            0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; }
-        }
+        @keyframes scan { 0% { top: 12%; } 50% { top: 88%; } 100% { top: 12%; } }
+        .corner { position:absolute; width:22px; height:22px; border:3px solid var(--brand); z-index:11; opacity:.85 }
+        .corner.tl { top:14px; left:14px; border-right:none; border-bottom:none; border-radius:6px 0 0 0 }
+        .corner.tr { top:14px; right:14px; border-left:none; border-bottom:none; border-radius:0 6px 0 0 }
+        .corner.bl { bottom:14px; left:14px; border-right:none; border-top:none; border-radius:0 0 0 6px }
+        .corner.br { bottom:14px; right:14px; border-left:none; border-top:none; border-radius:0 0 6px 0 }
+
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animasi masuk konten/tab */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .animate-fade-up { animation: fadeUp .35s ease both; }
+        .tab-content:not(.hidden) { animation: fadeUp .3s ease both; }
+
+        /* Kartu kanban */
+        .order-card { transition: transform .2s ease, box-shadow .2s ease; cursor: default; }
+        .order-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px -4px rgba(16,24,40,.14); }
+
+        /* Toast */
+        #toast-container { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); z-index: 100; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; }
+        @media (min-width: 768px){ #toast-container { bottom: 24px; left: auto; right: 24px; transform:none; align-items:flex-end; } }
+        .toast { pointer-events:auto; min-width: 240px; max-width: 92vw; display:flex; align-items:center; gap:10px;
+                 padding:12px 16px; border-radius:12px; color:#fff; font-size:14px; font-weight:600;
+                 box-shadow:0 10px 30px -5px rgba(0,0,0,.25); animation: toastIn .3s cubic-bezier(.21,1.02,.73,1) both; }
+        .toast.out { animation: toastOut .25s ease both; }
+        @keyframes toastIn { from { opacity:0; transform: translateY(14px) scale(.96);} to {opacity:1; transform:none;} }
+        @keyframes toastOut { to { opacity:0; transform: translateY(8px) scale(.96);} }
+
+        /* Modal */
+        .modal-panel { animation: modalPop .28s cubic-bezier(.21,1.02,.73,1) both; }
+        @keyframes modalPop { from { opacity:0; transform: translateY(16px) scale(.97);} to {opacity:1; transform:none;} }
+
+        /* Nav item aktif */
+        .nav-item { position: relative; transition: background-color .15s ease, color .15s ease; }
+        .nav-item.active { color: var(--brand); background: #eef2ff; }
+        .nav-item.active::before { content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px; border-radius:0 3px 3px 0; background:var(--brand); }
+        @media (max-width: 767px){
+            .nav-item.active { background: transparent; }
+            .nav-item.active::before { left: 25%; right: 25%; top: 0; bottom: auto; width: auto; height: 3px; border-radius: 0 0 3px 3px; }
+        }
+
+        /* Statistik: garis aksen atas */
+        .stat-card { position: relative; overflow: hidden; }
+        .stat-card::after { content:""; position:absolute; inset: 0 0 auto 0; height: 3px; background: var(--accent, var(--brand)); }
+
+        input[type=number]::-webkit-inner-spin-button { opacity: .4; }
+        ::selection { background:#c7d2fe; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans pb-20 md:pb-0">
+<body class="bg-slate-100 text-slate-800 font-sans antialiased pb-24 md:pb-0">
+    <a href="#dashboard" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lift focus:text-brand-700 focus:text-sm focus:font-semibold">Lewati ke konten utama</a>
 
-    <!-- Header Mobile Friendly -->
-    <header class="bg-blue-800 text-white p-3 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-base sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis flex-shrink-0 mr-2">
-            <i class="fas fa-tshirt mr-1"></i> Konveksi App
-        </h1>
-        <select class="bg-blue-700 text-white text-xs sm:text-sm p-1.5 rounded border border-blue-600 focus:outline-none max-w-[140px] sm:max-w-none text-ellipsis">
-            <option>Owner (Akses Penuh)</option>
-            <option>Admin Gudang</option>
-            <option>Staf Produksi</option>
-            <option>Bagian Keuangan</option>
-        </select>
-    </header>
+    <!-- ===== Sidebar (Desktop) ===== -->
+    <aside class="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 bg-brand-950 text-indigo-100 z-40">
+        <div class="flex items-center gap-3 px-5 h-16 border-b border-white/10">
+            <span class="w-9 h-9 rounded-xl bg-brand-500 grid place-items-center text-white shadow-lg shadow-brand-900/40">
+                <i class="fas fa-tshirt"></i>
+            </span>
+            <div class="leading-tight">
+                <p class="font-extrabold text-white tracking-tight">KonveksiApp</p>
+                <p class="text-[11px] text-indigo-300">Sistem Manajemen Konveksi</p>
+            </div>
+        </div>
 
-    <div class="flex flex-col md:flex-row min-h-screen">
-        <!-- Bottom Nav (Mobile) / Sidebar (Desktop) -->
-        <nav class="bg-white w-full md:w-64 border-t md:border-t-0 md:border-r border-gray-200 fixed bottom-0 md:relative z-40 md:min-h-screen flex md:flex-col justify-around md:justify-start shadow-[0_-2px_10px_rgba(0,0,0,0.05)] md:shadow-none pb-safe">
-            <button onclick="switchTab('dashboard')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-blue-700 font-semibold border-t-2 md:border-t-0 md:border-l-4 border-blue-700 hover:bg-blue-50">
-                <i class="fas fa-home text-xl md:mr-3 mb-1 md:mb-0"></i> 
-                <span class="text-[10px] md:text-base">Dashboard</span>
+        <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto hide-scrollbar">
+            <p class="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400/70">Menu Utama</p>
+            <button data-tab-btn="dashboard" onclick="switchTab('dashboard')" class="nav-item active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-indigo-100/80 hover:bg-white/5">
+                <i class="fas fa-gauge-high w-5 text-center"></i> Dashboard
             </button>
-            <button onclick="switchTab('stok')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-gray-500 border-t-2 md:border-t-0 md:border-l-4 border-transparent hover:bg-blue-50">
-                <i class="fas fa-barcode text-xl md:mr-3 mb-1 md:mb-0"></i> 
-                <span class="text-[10px] md:text-base">Stok</span>
+            <button data-tab-btn="stok" onclick="switchTab('stok')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-indigo-100/80 hover:bg-white/5">
+                <i class="fas fa-barcode w-5 text-center"></i> Stok &amp; Scan
             </button>
-            <button onclick="switchTab('produksi')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-gray-500 border-t-2 md:border-t-0 md:border-l-4 border-transparent hover:bg-blue-50">
-                <i class="fas fa-cut text-xl md:mr-3 mb-1 md:mb-0"></i> 
-                <span class="text-[10px] md:text-base">Produksi</span>
+            <button data-tab-btn="produksi" onclick="switchTab('produksi')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-indigo-100/80 hover:bg-white/5">
+                <i class="fas fa-cut w-5 text-center"></i> Produksi
             </button>
-            <button onclick="switchTab('keuangan')" class="nav-btn flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start p-2 md:p-4 text-gray-500 border-t-2 md:border-t-0 md:border-l-4 border-transparent hover:bg-blue-50">
-                <i class="fas fa-wallet text-xl md:mr-3 mb-1 md:mb-0"></i> 
-                <span class="text-[10px] md:text-base">Keuangan</span>
+            <button data-tab-btn="keuangan" onclick="switchTab('keuangan')" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-indigo-100/80 hover:bg-white/5">
+                <i class="fas fa-wallet w-5 text-center"></i> Keuangan
             </button>
+
+            <p class="px-3 pt-5 pb-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400/70">Pengaturan</p>
+            <label class="block px-3 pt-1">
+                <span class="sr-only">Pilih Peran</span>
+                <select id="role-select" class="w-full bg-white/10 border border-white/10 rounded-lg text-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-400 text-indigo-50 [&>option]:text-slate-800">
+                    <option>Owner (Akses Penuh)</option>
+                    <option>Admin Gudang</option>
+                    <option>Staf Produksi</option>
+                    <option>Bagian Keuangan</option>
+                </select>
+            </label>
         </nav>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 p-3 sm:p-4 md:p-6 w-full max-w-full overflow-hidden">
-            
+        <div class="p-4 border-t border-white/10 text-[11px] text-indigo-300/80 flex items-center justify-between">
+            <span>v1.2 · Data lokal</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Aktif</span>
+        </div>
+    </aside>
+
+    <!-- ===== Topbar ===== -->
+    <header class="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-slate-200">
+        <div class="flex items-center justify-between px-4 sm:px-6 h-14 md:h-16">
+            <div class="flex items-center gap-3 min-w-0">
+                <span class="md:hidden w-8 h-8 rounded-lg bg-brand-600 grid place-items-center text-white shrink-0"><i class="fas fa-tshirt text-sm"></i></span>
+                <div class="min-w-0">
+                    <h1 id="page-title" class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 truncate">Dashboard</h1>
+                    <p id="page-subtitle" class="hidden sm:block text-xs text-slate-500 -mt-0.5 truncate">Ringkasan operasional konveksi hari ini</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="topbar-date" class="hidden lg:inline-flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-3 py-1.5">
+                    <i class="far fa-calendar"></i> <span id="topbar-date-text"></span>
+                </span>
+                <div class="relative">
+                    <select id="role-select-mobile" class="md:hidden appearance-none bg-slate-100 border border-slate-200 rounded-full text-xs font-semibold py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-700">
+                        <option>Owner</option><option>Gudang</option><option>Produksi</option><option>Keuangan</option>
+                    </select>
+                    <i class="fas fa-chevron-down text-[10px] text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none md:hidden"></i>
+                </div>
+                <span class="hidden md:inline-flex w-9 h-9 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-extrabold text-sm ring-2 ring-white shadow-card" title="Masuk sebagai Owner">O</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== Konten Utama ===== -->
+    <div class="md:pl-64">
+        <main class="px-4 sm:px-6 py-5 max-w-6xl mx-auto w-full">
+
             <!-- SECTION: DASHBOARD -->
             <section id="dashboard" class="tab-content block">
-                <h2 class="text-xl sm:text-2xl font-bold mb-4">Ringkasan Sistem</h2>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500">
-                        <p class="text-xs text-gray-500">Stok Barang Jadi</p>
-                        <h3 class="text-xl sm:text-2xl font-bold"><span id="dashboard-stok-jadi">1,240</span> <span class="text-xs font-normal">pcs</span></h3>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+                    <div class="stat-card bg-white rounded-xl p-4 shadow-card" style="--accent:#4f46e5">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Stok Barang Jadi</p>
+                            <span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 grid place-items-center text-sm"><i class="fas fa-boxes-stacked"></i></span>
+                        </div>
+                        <h3 class="mt-2 text-xl sm:text-2xl font-extrabold text-slate-900 tabular-nums"><span id="dashboard-stok-jadi">1,240</span> <span class="text-xs font-semibold text-slate-400">pcs</span></h3>
+                        <p class="text-[11px] text-slate-400 mt-1">Siap dikirim ke pembeli</p>
                     </div>
-                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-yellow-500">
-                        <p class="text-xs text-gray-500">Order Aktif</p>
-                        <h3 class="text-xl sm:text-2xl font-bold" id="dashboard-order-aktif">4 <span class="text-xs font-normal">batch</span></h3>
+                    <div class="stat-card bg-white rounded-xl p-4 shadow-card" style="--accent:#f59e0b">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Order Aktif</p>
+                            <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 grid place-items-center text-sm"><i class="fas fa-scissors"></i></span>
+                        </div>
+                        <h3 class="mt-2 text-xl sm:text-2xl font-extrabold text-slate-900 tabular-nums" id="dashboard-order-aktif">4 <span class="text-xs font-semibold text-slate-400">batch</span></h3>
+                        <p class="text-[11px] text-slate-400 mt-1">Sedang dalam produksi</p>
                     </div>
-                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-green-500 col-span-2 md:col-span-1">
-                        <p class="text-xs text-gray-500">Saldo Kas</p>
-                        <h3 class="text-xl sm:text-2xl font-bold text-green-700" id="dashboard-saldo">Rp 12.500.000</h3>
+                    <div class="stat-card bg-white rounded-xl p-4 shadow-card" style="--accent:#10b981">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Saldo Kas</p>
+                            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 grid place-items-center text-sm"><i class="fas fa-sack-dollar"></i></span>
+                        </div>
+                        <h3 class="mt-2 text-lg sm:text-xl font-extrabold text-emerald-600 tabular-nums" id="dashboard-saldo">Rp 12.500.000</h3>
+                        <p class="text-[11px] text-slate-400 mt-1">Total saldo berjalan</p>
+                    </div>
+                    <div class="stat-card bg-white rounded-xl p-4 shadow-card col-span-2 lg:col-span-1" style="--accent:#ef4444">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Perlu Perhatian</p>
+                            <span class="w-8 h-8 rounded-lg bg-red-50 text-red-600 grid place-items-center text-sm"><i class="fas fa-triangle-exclamation"></i></span>
+                        </div>
+                        <h3 class="mt-2 text-xl sm:text-2xl font-extrabold text-slate-900 tabular-nums" id="dashboard-perhatian">1 <span class="text-xs font-semibold text-slate-400">item</span></h3>
+                        <p class="text-[11px] text-slate-400 mt-1">Bahan mendekati minimum</p>
                     </div>
                 </div>
 
-                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4 text-sm" role="alert">
-                    <strong class="font-bold"><i class="fas fa-exclamation-triangle"></i> Peringatan Stok!</strong>
-                    <span class="block sm:inline"> Kain Katun Combed 30s Hitam mendekati batas minimum.</span>
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl mb-5 text-sm flex items-start gap-3 shadow-card" role="alert">
+                    <span class="mt-0.5 w-7 h-7 shrink-0 rounded-lg bg-amber-100 text-amber-600 grid place-items-center"><i class="fas fa-triangle-exclamation"></i></span>
+                    <div>
+                        <p class="font-bold">Peringatan Stok Bahan Baku</p>
+                        <p class="text-[13px] opacity-90">Kain Katun Combed 30s Hitam mendekati batas minimum. Segera lakukan pemesanan ulang ke supplier.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+                    <div class="bg-white rounded-xl shadow-card overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                            <h3 class="font-bold text-sm text-slate-900"><i class="fas fa-diagram-project text-brand-600 mr-1.5"></i> Ringkasan Tahap Produksi</h3>
+                            <button onclick="switchTab('produksi')" class="text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline">Lihat papan &rarr;</button>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-100">
+                            <button onclick="switchTab('produksi')" class="py-4 text-center hover:bg-slate-50 transition">
+                                <p class="text-2xl font-extrabold text-slate-900 tabular-nums" id="ringkas-potong">2</p>
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mt-1">Potong</p>
+                            </button>
+                            <button onclick="switchTab('produksi')" class="py-4 text-center hover:bg-slate-50 transition">
+                                <p class="text-2xl font-extrabold text-slate-900 tabular-nums" id="ringkas-jahit">1</p>
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mt-1">Jahit</p>
+                            </button>
+                            <button onclick="switchTab('produksi')" class="py-4 text-center hover:bg-slate-50 transition">
+                                <p class="text-2xl font-extrabold text-slate-900 tabular-nums" id="ringkas-qc">0</p>
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mt-1">QC</p>
+                            </button>
+                            <button onclick="switchTab('produksi')" class="py-4 text-center hover:bg-slate-50 transition">
+                                <p class="text-2xl font-extrabold text-slate-900 tabular-nums" id="ringkas-packing">1</p>
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mt-1">Packing</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-card overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                            <h3 class="font-bold text-sm text-slate-900"><i class="fas fa-clock-rotate-left text-brand-600 mr-1.5"></i> Transaksi Terakhir</h3>
+                            <button onclick="switchTab('keuangan')" class="text-xs font-semibold text-brand-600 hover:text-brand-800 hover:underline">Semua &rarr;</button>
+                        </div>
+                        <ul id="dashboard-transaksi-terakhir" class="divide-y divide-slate-100 text-sm"></ul>
+                    </div>
                 </div>
             </section>
 
             <!-- SECTION: STOK & SCAN BARCODE -->
             <section id="stok" class="tab-content hidden">
-                <h2 class="text-xl sm:text-2xl font-bold mb-4">Manajemen Stok & Barcode</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    
-                    <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100">
-                        <h3 class="font-bold mb-3 border-b pb-2 text-sm sm:text-base"><i class="fas fa-camera text-blue-600"></i> Scan Barcode</h3>
-                        
-                        <div class="relative w-full bg-gray-100 rounded-lg overflow-hidden mb-4 min-h-[200px] sm:min-h-[250px] flex items-center justify-center border-2 border-dashed border-gray-300">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-start">
+
+                    <div class="bg-white rounded-xl shadow-card border border-slate-200/60 p-4 sm:p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-sm sm:text-base text-slate-900"><i class="fas fa-camera text-brand-600 mr-1.5"></i> Scan Barcode / QR</h3>
+                            <span id="scan-status-badge" class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500"><i class="far fa-circle text-[8px] mr-1 align-middle"></i>Siaga</span>
+                        </div>
+
+                        <div class="relative w-full bg-slate-900 rounded-xl overflow-hidden mb-4 min-h-[220px] sm:min-h-[260px] flex items-center justify-center">
                             <div id="reader" class="w-full h-full absolute inset-0"></div>
+                            <div id="scan-corners" class="hidden">
+                                <span class="corner tl"></span><span class="corner tr"></span>
+                                <span class="corner bl"></span><span class="corner br"></span>
+                            </div>
                             <div id="scan-line" class="scan-line"></div>
-                            <p id="kamera-placeholder" class="text-gray-400 text-xs sm:text-sm z-0 relative pointer-events-none text-center px-4">
-                                <i class="fas fa-qrcode text-3xl mb-2 block"></i> Kamera Siap Digunakan
+                            <p id="kamera-placeholder" class="text-slate-400 text-xs sm:text-sm z-0 relative pointer-events-none text-center px-4">
+                                <i class="fas fa-qrcode text-4xl mb-2 block opacity-60"></i>
+                                Tekan <b>Mulai Scan</b> untuk memindai barcode
                             </p>
                             <!-- Fallback input manual jika kamera tidak tersedia -->
-                            <div id="manual-scan-container" class="hidden absolute inset-0 bg-white p-3 sm:p-4 flex flex-col justify-center z-20">
-                                <p class="text-xs text-gray-600 mb-2 text-center"><i class="fas fa-camera-slash text-amber-500 mr-1"></i> Kamera tidak tersedia. Masukkan SKU secara manual:</p>
-                                <input type="text" id="manual-sku-input" placeholder="cth: BRG-JD-002" class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none mb-2">
-                                <button id="btn-manual-submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded-md text-sm"><i class="fas fa-keyboard mr-1"></i> Kirim SKU</button>
+                            <div id="manual-scan-container" class="hidden absolute inset-0 bg-white p-4 flex-col justify-center z-20">
+                                <p class="text-xs text-slate-600 mb-2 text-center"><i class="fas fa-camera-slash text-amber-500 mr-1"></i> Kamera tidak tersedia — masukkan SKU manual:</p>
+                                <input type="text" id="manual-sku-input" placeholder="cth: BRG-JD-002" autocomplete="off" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none mb-2 font-mono">
+                                <button id="btn-manual-submit" class="bg-brand-600 hover:bg-brand-700 active:scale-[.98] text-white font-bold py-2.5 px-2 rounded-lg text-sm transition"><i class="fas fa-keyboard mr-1"></i> Kirim SKU</button>
                             </div>
                         </div>
-                        
-                        <div id="scan-result-container" class="hidden bg-green-50 border border-green-200 p-2 sm:p-3 rounded mb-4">
-                            <p class="text-xs text-green-800 mb-1">SKU Terdeteksi:</p>
-                            <p id="scanned-sku" class="text-lg sm:text-xl font-mono font-bold text-green-900 break-all">-</p>
+
+                        <div id="scan-result-container" class="hidden bg-emerald-50 border border-emerald-200 p-3 rounded-lg mb-4">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 mb-0.5">SKU Terdeteksi</p>
+                            <p id="scanned-sku" class="text-lg sm:text-xl font-mono font-bold text-emerald-900 break-all">-</p>
                         </div>
-                        
-                        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jumlah (pcs / m)</label>
-                        <input type="number" id="jumlah-stok" min="1" value="1" class="w-full p-2.5 border border-gray-300 rounded-md mb-4 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        
-                        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jenis Transaksi</label>
-                        <select id="jenis-transaksi" class="w-full p-2.5 border border-gray-300 rounded-md mb-4 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="MASUK_BAHAN">Masuk (Bahan Baku Tiba)</option>
-                            <option value="KELUAR_PRODUKSI">Keluar (Pakai Produksi)</option>
-                            <option value="MASUK_BARANGJADI">Masuk (Stok Barang Jadi)</option>
-                            <option value="KELUAR_KIRIM">Keluar (Kirim Pembeli)</option>
-                        </select>
-                        
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label for="jumlah-stok" class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (pcs / m)</label>
+                                <input type="number" id="jumlah-stok" min="1" value="1" inputmode="numeric" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none tabular-nums">
+                            </div>
+                            <div>
+                                <label for="jenis-transaksi" class="block text-xs font-semibold text-slate-600 mb-1">Jenis Transaksi</label>
+                                <select id="jenis-transaksi" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                                    <option value="MASUK_BAHAN">Masuk — Bahan Baku Tiba</option>
+                                    <option value="KELUAR_PRODUKSI">Keluar — Pakai Produksi</option>
+                                    <option value="MASUK_BARANGJADI">Masuk — Barang Jadi</option>
+                                    <option value="KELUAR_KIRIM">Keluar — Kirim Pembeli</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="flex gap-2">
-                            <button id="btn-start-scan" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-2 rounded-md text-sm">
-                                <i class="fas fa-play mr-1"></i> Mulai Scan
+                            <button id="btn-start-scan" class="flex-1 inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[.98] text-white font-bold py-2.5 px-3 rounded-lg text-sm transition shadow-card">
+                                <i class="fas fa-play text-xs"></i> Mulai Scan
                             </button>
-                            <button id="btn-simpan-stok" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-2 rounded-md text-sm opacity-50 cursor-not-allowed" disabled>
-                                <i class="fas fa-save mr-1"></i> Simpan
+                            <button id="btn-simpan-stok" class="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600 text-white font-bold py-2.5 px-3 rounded-lg text-sm transition shadow-card" disabled>
+                                <i class="fas fa-floppy-disk text-xs"></i> Simpan Stok
                             </button>
                         </div>
                     </div>
 
-                    <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100">
-                        <h3 class="font-bold mb-3 border-b pb-2 text-sm sm:text-base">Riwayat Scan</h3>
-                        <div class="overflow-x-auto">
+                    <div class="bg-white rounded-xl shadow-card border border-slate-200/60 overflow-hidden">
+                        <div class="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-slate-100">
+                            <h3 class="font-bold text-sm sm:text-base text-slate-900"><i class="fas fa-clock-rotate-left text-brand-600 mr-1.5"></i> Riwayat Scan</h3>
+                            <span id="riwayat-count" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 tabular-nums">0</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
                             <table class="w-full text-xs sm:text-sm text-left whitespace-nowrap">
-                                <thead class="bg-gray-50 text-gray-600 border-b">
-                                    <tr>
-                                        <th class="py-2 px-2 font-medium">SKU</th>
-                                        <th class="py-2 px-2 font-medium">Jenis</th>
-                                        <th class="py-2 px-2 font-medium">Qty</th>
-                                        <th class="py-2 px-2 font-medium">Waktu</th>
+                                <thead class="bg-slate-50 text-slate-500 sticky top-0">
+                                    <tr class="[&>th]:py-2.5 [&>th]:px-4 [&>th]:font-semibold [&>th]:text-[11px] [&>th]:uppercase [&>th]:tracking-wide">
+                                        <th>SKU</th><th>Jenis</th><th>Qty</th><th>Waktu</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabel-riwayat">
-                                    <tr class="border-b">
-                                        <td class="py-2.5 px-2 font-mono text-blue-600">BRG-JD-001</td>
-                                        <td class="py-2.5 px-2"><span class="bg-green-100 text-green-800 text-[10px] sm:text-xs px-2 py-1 rounded font-semibold">Masuk</span></td>
-                                        <td class="py-2.5 px-2">+50</td>
-                                        <td class="py-2.5 px-2 text-gray-500">10:32</td>
-                                    </tr>
-                                </tbody>
+                                <tbody id="tabel-riwayat" class="divide-y divide-slate-100"></tbody>
                             </table>
                         </div>
+                        <p class="px-4 py-2.5 text-[11px] text-slate-400 border-t border-slate-100 bg-slate-50/60">Menampilkan maks. 50 transaksi terakhir · tersimpan otomatis di perangkat.</p>
                     </div>
                 </div>
             </section>
 
             <!-- SECTION: PRODUKSI -->
-            <section id="produksi" class="tab-content hidden h-full flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl sm:text-2xl font-bold">Alur Produksi</h2>
-                    <button onclick="tambahOrder()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs sm:text-sm rounded font-bold shadow-sm">
-                        <i class="fas fa-plus"></i> Order Baru
+            <section id="produksi" class="tab-content hidden">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                    <p class="text-sm text-slate-500">Pantau progres setiap batch dari pemotongan hingga pengemasan.</p>
+                    <button onclick="tambahOrder()" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[.98] text-white px-4 py-2 text-sm rounded-lg font-bold shadow-card transition">
+                        <i class="fas fa-plus text-xs"></i> Order Baru
                     </button>
                 </div>
-                
+
                 <!-- Kanban Board -->
-                <div class="flex overflow-x-auto hide-scrollbar gap-4 pb-4 flex-1 items-start">
-                    
+                <div class="flex overflow-x-auto hide-scrollbar gap-4 pb-4 items-start snap-x">
+
                     <!-- Tahap Potong -->
-                    <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            1. Potong <span id="badge-potong" class="bg-blue-200 text-blue-800 text-xs rounded-full px-2 py-0.5 font-bold">2</span>
+                    <div class="bg-white/70 rounded-xl p-3 min-w-[260px] max-w-[260px] border border-slate-200 snap-start shrink-0">
+                        <h3 class="font-bold pb-2.5 mb-3 text-sm flex items-center justify-between border-b-2 border-indigo-200">
+                            <span class="inline-flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 grid place-items-center text-[10px] font-extrabold">1</span> Potong</span>
+                            <span id="badge-potong" class="bg-indigo-100 text-indigo-700 text-xs rounded-full px-2 py-0.5 font-bold tabular-nums">2</span>
                         </h3>
-                        <div id="container-potong" class="min-h-[100px]">
-                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-blue-500 mb-2 transition-all duration-300">
-                                <p class="font-bold text-sm text-gray-800">ORD-001</p>
-                                <p class="text-xs text-gray-500 mb-2">Diora Pants (100 pcs)</p>
-                                <button onclick="geserTahap(this, 'potong', 'jahit')" class="btn-action w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs py-1.5 rounded font-semibold transition shadow-sm">Geser ke Jahit &rarr;</button>
-                            </div>
-                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-blue-500 mb-2 transition-all duration-300">
-                                <p class="font-bold text-sm text-gray-800">ORD-002</p>
-                                <p class="text-xs text-gray-500 mb-2">Sakura Dress (50 pcs)</p>
-                                <button onclick="geserTahap(this, 'potong', 'jahit')" class="btn-action w-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs py-1.5 rounded font-semibold transition shadow-sm">Geser ke Jahit &rarr;</button>
-                            </div>
-                        </div>
+                        <div id="container-potong" class="min-h-[100px] space-y-2"></div>
                     </div>
 
                     <!-- Tahap Jahit -->
-                    <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            2. Jahit <span id="badge-jahit" class="bg-yellow-200 text-yellow-800 text-xs rounded-full px-2 py-0.5 font-bold">1</span>
+                    <div class="bg-white/70 rounded-xl p-3 min-w-[260px] max-w-[260px] border border-slate-200 snap-start shrink-0">
+                        <h3 class="font-bold pb-2.5 mb-3 text-sm flex items-center justify-between border-b-2 border-amber-200">
+                            <span class="inline-flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-amber-100 text-amber-700 grid place-items-center text-[10px] font-extrabold">2</span> Jahit</span>
+                            <span id="badge-jahit" class="bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 font-bold tabular-nums">1</span>
                         </h3>
-                        <div id="container-jahit" class="min-h-[100px]">
-                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-yellow-500 mb-2 transition-all duration-300">
-                                <p class="font-bold text-sm text-gray-800">ORD-003</p>
-                                <p class="text-xs text-gray-500 mb-2">Kemeja Flanel (200 pcs)</p>
-                                <button onclick="geserTahap(this, 'jahit', 'qc')" class="btn-action w-full bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200 text-xs py-1.5 rounded font-semibold transition shadow-sm">Geser ke QC &rarr;</button>
-                            </div>
-                        </div>
+                        <div id="container-jahit" class="min-h-[100px] space-y-2"></div>
                     </div>
 
                     <!-- Tahap QC -->
-                    <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            3. QC <span id="badge-qc" class="bg-red-200 text-red-800 text-xs rounded-full px-2 py-0.5 font-bold">0</span>
+                    <div class="bg-white/70 rounded-xl p-3 min-w-[260px] max-w-[260px] border border-slate-200 snap-start shrink-0">
+                        <h3 class="font-bold pb-2.5 mb-3 text-sm flex items-center justify-between border-b-2 border-rose-200">
+                            <span class="inline-flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-rose-100 text-rose-700 grid place-items-center text-[10px] font-extrabold">3</span> QC</span>
+                            <span id="badge-qc" class="bg-rose-100 text-rose-700 text-xs rounded-full px-2 py-0.5 font-bold tabular-nums">0</span>
                         </h3>
-                        <div id="container-qc" class="min-h-[100px]">
-                            <p class="empty-msg text-xs text-center text-gray-400 py-6 italic border-2 border-dashed border-gray-200 rounded">Kosong</p>
-                        </div>
+                        <div id="container-qc" class="min-h-[100px] space-y-2"></div>
                     </div>
 
                     <!-- Tahap Packing -->
-                    <div class="bg-gray-100/80 rounded-lg p-3 min-w-[260px] max-w-[260px] border border-gray-200">
-                        <h3 class="font-bold border-b-2 border-gray-300 pb-2 mb-3 text-sm flex justify-between">
-                            4. Packing <span id="badge-packing" class="bg-green-200 text-green-800 text-xs rounded-full px-2 py-0.5 font-bold">1</span>
+                    <div class="bg-white/70 rounded-xl p-3 min-w-[260px] max-w-[260px] border border-slate-200 snap-start shrink-0">
+                        <h3 class="font-bold pb-2.5 mb-3 text-sm flex items-center justify-between border-b-2 border-emerald-200">
+                            <span class="inline-flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 grid place-items-center text-[10px] font-extrabold">4</span> Packing</span>
+                            <span id="badge-packing" class="bg-emerald-100 text-emerald-700 text-xs rounded-full px-2 py-0.5 font-bold tabular-nums">1</span>
                         </h3>
-                        <div id="container-packing" class="min-h-[100px]">
-                            <div class="order-card bg-white p-3 rounded-md shadow-sm border-l-4 border-green-500 mb-2 transition-all duration-300">
-                                <p class="font-bold text-sm text-gray-800">ORD-004</p>
-                                <p class="text-xs text-gray-500 mb-2">Celana Chino (75 pcs)</p>
-                                <button onclick="selesaiProduksi(this, 'packing')" class="btn-action w-full bg-green-500 hover:bg-green-600 text-white text-xs py-1.5 rounded font-bold transition shadow-sm"><i class="fas fa-check"></i> Masuk Gudang</button>
-                            </div>
-                        </div>
+                        <div id="container-packing" class="min-h-[100px] space-y-2"></div>
                     </div>
 
                 </div>
             </section>
 
             <!-- MODAL: ORDER BARU -->
-            <div id="modal-order" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-4 sm:p-6">
-                    <h3 class="font-bold text-lg mb-4 border-b pb-2"><i class="fas fa-plus-circle text-blue-600 mr-1"></i> Order Produksi Baru</h3>
-                    <form id="form-order-baru">
-                        <div class="mb-3">
-                            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Nama Produk</label>
-                            <input type="text" id="order-nama" required placeholder="cth: Kaos Polos Hitam" class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        </div>
+            <div id="modal-order" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+                <div class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 bg-brand-950 text-white">
+                        <h3 class="font-bold text-base"><i class="fas fa-circle-plus mr-1.5 opacity-80"></i> Order Produksi Baru</h3>
+                        <button type="button" onclick="tutupModalOrder()" aria-label="Tutup" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-white/10 transition"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <form id="form-order-baru" class="p-5">
                         <div class="mb-4">
-                            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jumlah (pcs)</label>
-                            <input type="number" id="order-jumlah" required min="1" value="50" class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <label for="order-nama" class="block text-xs font-semibold text-slate-600 mb-1">Nama Produk <span class="text-rose-500">*</span></label>
+                            <input type="text" id="order-nama" required placeholder="cth: Kaos Polos Hitam" autocomplete="off" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                        </div>
+                        <div class="mb-5">
+                            <label for="order-jumlah" class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (pcs) <span class="text-rose-500">*</span></label>
+                            <input type="number" id="order-jumlah" required min="1" value="50" inputmode="numeric" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none tabular-nums">
                         </div>
                         <div class="flex gap-2">
-                            <button type="button" onclick="tutupModalOrder()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 rounded-md text-sm">Batal</button>
-                            <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-md text-sm"><i class="fas fa-save mr-1"></i> Simpan</button>
+                            <button type="button" onclick="tutupModalOrder()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-lg text-sm transition">Batal</button>
+                            <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-card"><i class="fas fa-floppy-disk text-xs"></i> Simpan</button>
                         </div>
                     </form>
                 </div>
@@ -256,26 +413,25 @@
 
             <!-- SECTION: KEUANGAN -->
             <section id="keuangan" class="tab-content hidden">
-                <h2 class="text-xl sm:text-2xl font-bold mb-4">Pencatatan Keuangan</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                    
-                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 h-fit">
-                        <h3 class="font-bold mb-4 border-b pb-2 text-sm sm:text-base"><i class="fas fa-pen text-blue-600"></i> Catat Transaksi Baru</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
+
+                    <div class="bg-white rounded-xl shadow-card border border-slate-200/60 p-4 sm:p-5">
+                        <h3 class="font-bold mb-4 text-sm sm:text-base text-slate-900"><i class="fas fa-pen text-brand-600 mr-1.5"></i> Catat Transaksi Baru</h3>
                         <form id="form-keuangan">
                             <div class="mb-3">
-                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jenis Transaksi</label>
-                                <div class="flex gap-4 p-2 bg-gray-50 rounded border border-gray-200">
-                                    <label class="flex items-center text-sm cursor-pointer text-green-700 font-semibold">
-                                        <input type="radio" name="jenis_uang" value="Pemasukan" class="mr-2 accent-green-600" checked> Pemasukan
+                                <span class="block text-xs font-semibold text-slate-600 mb-1">Jenis Transaksi</span>
+                                <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Jenis transaksi uang">
+                                    <label class="flex items-center justify-center gap-2 text-sm cursor-pointer rounded-lg border py-2.5 font-semibold transition has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 has-[:checked]:ring-2 has-[:checked]:ring-emerald-100 border-slate-200 text-slate-500 hover:bg-slate-50">
+                                        <input type="radio" name="jenis_uang" value="Pemasukan" class="sr-only peer" checked> Pemasukan <i class="fas fa-arrow-down text-xs"></i>
                                     </label>
-                                    <label class="flex items-center text-sm cursor-pointer text-red-700 font-semibold">
-                                        <input type="radio" name="jenis_uang" value="Pengeluaran" class="mr-2 accent-red-600"> Pengeluaran
+                                    <label class="flex items-center justify-center gap-2 text-sm cursor-pointer rounded-lg border py-2.5 font-semibold transition has-[:checked]:bg-rose-50 has-[:checked]:border-rose-500 has-[:checked]:text-rose-700 has-[:checked]:ring-2 has-[:checked]:ring-rose-100 border-slate-200 text-slate-500 hover:bg-slate-50">
+                                        <input type="radio" name="jenis_uang" value="Pengeluaran" class="sr-only peer"> Pengeluaran <i class="fas fa-arrow-up text-xs"></i>
                                     </label>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                                <select id="kategori-keuangan" class="w-full p-2.5 border border-gray-300 rounded text-sm focus:ring-blue-500 outline-none">
+                                <label for="kategori-keuangan" class="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
+                                <select id="kategori-keuangan" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
                                     <option>Penjualan Langsung</option>
                                     <option>Transfer Marketplace (Shopee/TikTok)</option>
                                     <option>Pembelian Bahan Baku</option>
@@ -284,55 +440,42 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                                <input type="date" id="tgl-keuangan" class="w-full p-2.5 border border-gray-300 rounded text-sm focus:ring-blue-500 outline-none">
+                                <label for="tgl-keuangan" class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+                                <input type="date" id="tgl-keuangan" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
                             </div>
                             <div class="mb-5">
-                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jumlah (Rp)</label>
+                                <label for="jumlah-keuangan" class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Rp)</label>
                                 <div class="relative">
-                                    <span class="absolute left-3 top-2.5 text-gray-500 text-sm">Rp</span>
-                                    <input type="number" id="jumlah-keuangan" class="w-full p-2.5 pl-8 border border-gray-300 rounded text-sm focus:ring-blue-500 outline-none" placeholder="150000" required>
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">Rp</span>
+                                    <input type="number" id="jumlah-keuangan" class="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none tabular-nums" placeholder="150000" required inputmode="numeric">
                                 </div>
                             </div>
-                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded text-sm transition shadow-sm">
-                                <i class="fas fa-save mr-1"></i> Simpan Transaksi
+                            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 active:scale-[.98] text-white font-bold py-2.5 rounded-lg text-sm transition shadow-card">
+                                <i class="fas fa-floppy-disk text-xs"></i> Simpan Transaksi
                             </button>
                         </form>
                     </div>
 
-                    <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-100 lg:col-span-2">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 class="font-bold text-sm sm:text-base">Arus Kas Terakhir</h3>
-                            <button id="export-excel" class="text-green-600 text-xs sm:text-sm hover:underline font-semibold bg-green-50 px-2 py-1 rounded">
+                    <div class="bg-white rounded-xl shadow-card border border-slate-200/60 lg:col-span-2 overflow-hidden">
+                        <div class="flex justify-between items-center px-4 sm:px-5 py-3.5 border-b border-slate-100">
+                            <h3 class="font-bold text-sm sm:text-base text-slate-900"><i class="fas fa-money-bill-trend-up text-brand-600 mr-1.5"></i> Arus Kas Terakhir</h3>
+                            <button id="export-excel" class="inline-flex items-center gap-1.5 text-emerald-700 text-xs sm:text-sm font-semibold bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 active:scale-[.98] px-2.5 py-1.5 rounded-lg transition">
                                 <i class="fas fa-file-excel"></i> Export Excel
                             </button>
                         </div>
-                        
-                        <div class="overflow-x-auto">
+
+                        <div class="overflow-x-auto max-h-[440px] overflow-y-auto">
                             <table class="w-full text-xs sm:text-sm text-left whitespace-nowrap">
-                                <thead class="bg-gray-50 text-gray-600 border-b">
-                                    <tr>
-                                        <th class="py-2 px-2">Tanggal</th>
-                                        <th class="py-2 px-2">Kategori</th>
-                                        <th class="py-2 px-2 text-right">Nominal</th>
+                                <thead class="bg-slate-50 text-slate-500 sticky top-0">
+                                    <tr class="[&>th]:py-2.5 [&>th]:px-4 [&>th]:font-semibold [&>th]:text-[11px] [&>th]:uppercase [&>th]:tracking-wide">
+                                        <th>Tanggal</th><th>Kategori</th><th class="text-right">Nominal</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tabel-keuangan">
-                                    <tr class="border-b">
-                                        <td class="py-2.5 px-2">27 Sep 2026</td>
-                                        <td class="py-2.5 px-2 font-medium">Penjualan Shopee</td>
-                                        <td class="py-2.5 px-2 text-right text-green-600 font-bold">+ Rp 2.500.000</td>
-                                    </tr>
-                                    <tr class="border-b">
-                                        <td class="py-2.5 px-2">26 Sep 2026</td>
-                                        <td class="py-2.5 px-2 font-medium">Upah Produksi</td>
-                                        <td class="py-2.5 px-2 text-right text-red-600 font-bold">- Rp 800.000</td>
-                                    </tr>
-                                </tbody>
+                                <tbody id="tabel-keuangan" class="divide-y divide-slate-100"></tbody>
                                 <tfoot>
-                                    <tr class="bg-blue-50 border-t-2 border-blue-200">
-                                        <td colspan="2" class="py-3 px-2 text-right font-bold text-blue-900">Total Saldo Kas:</td>
-                                        <td class="py-3 px-2 text-right font-bold text-blue-700 text-base" id="total-saldo">Rp 12.500.000</td>
+                                    <tr class="bg-brand-50/70 border-t-2 border-brand-100">
+                                        <td colspan="2" class="py-3 px-4 text-right font-bold text-brand-900 text-sm">Total Saldo Kas:</td>
+                                        <td class="py-3 px-4 text-right font-extrabold text-brand-700 text-sm sm:text-base tabular-nums" id="total-saldo">Rp 12.500.000</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -344,6 +487,27 @@
 
         </main>
     </div>
+
+    <!-- ===== Bottom Nav (Mobile) ===== -->
+    <nav class="md:hidden bg-white border-t border-slate-200 fixed bottom-0 inset-x-0 z-40 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(16,24,40,0.06)]">
+        <div class="flex justify-around">
+            <button data-tab-btn="dashboard" onclick="switchTab('dashboard')" class="nav-item active flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-slate-500">
+                <i class="fas fa-gauge-high text-lg"></i> Dashboard
+            </button>
+            <button data-tab-btn="stok" onclick="switchTab('stok')" class="nav-item flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-slate-500">
+                <i class="fas fa-barcode text-lg"></i> Stok
+            </button>
+            <button data-tab-btn="produksi" onclick="switchTab('produksi')" class="nav-item flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-slate-500">
+                <i class="fas fa-cut text-lg"></i> Produksi
+            </button>
+            <button data-tab-btn="keuangan" onclick="switchTab('keuangan')" class="nav-item flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-slate-500">
+                <i class="fas fa-wallet text-lg"></i> Keuangan
+            </button>
+        </div>
+    </nav>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" aria-live="polite"></div>
 
     <!-- Script Terpisah -->
     <script defer src="app.js"></script>
