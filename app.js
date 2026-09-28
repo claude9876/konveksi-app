@@ -1,7 +1,8 @@
 // ============================================================
 // Konveksi App - Logika Utama
-// Semua data disimpan di localStorage agar tetap tersimpan
-// setelah halaman ditutup / browser dibuka ulang.
+// Integrasi database: Supabase (cloud, realtime) dengan
+// fallback otomatis ke localStorage saat offline/belum dikonfigurasi.
+// Perubahan data juga diantrekan dan disinkronkan saat online.
 // ============================================================
 
 // --- State Global ---
@@ -10,6 +11,14 @@ let isScanning = false;
 let lastScannedSku = "";
 
 const STORAGE_KEY = "konveksi_app_v2";
+
+// Pemetaan arah transaksi stok -> kolom database
+const JENIS_TO_DB = {
+    MASUK_BAHAN:     { direction: "masuk",  category: "bahan_baku" },
+    MASUK_BARANGJADI:{ direction: "masuk",  category: "barang_jadi" },
+    KELUAR_RETUR:    { direction: "keluar", category: "retur" },
+    KELUAR_KIRIM:    { direction: "keluar", category: "barang_jadi" }
+};
 
 const defaultState = {
     saldo: 12500000,
@@ -23,20 +32,86 @@ const defaultState = {
     ],
     orderKanban: {
         potong: [
-            { id: "ORD-001", nama: "Diora Pants (100 pcs)" },
-            { id: "ORD-002", nama: "Sakura Dress (50 pcs)" }
+            { id: cryptoId(), dbId: null, orderId: "ORD-001", nama: "Diora Pants (100 pcs)" },
+            { id: cryptoId(), dbId: null, orderId: "ORD-002", nama: "Sakura Dress (50 pcs)" }
         ],
         jahit: [
-            { id: "ORD-003", nama: "Kemeja Flanel (200 pcs)" }
+            { id: cryptoId(), dbId: null, orderId: "ORD-003", nama: "Kemeja Flanel (200 pcs)" }
         ],
         qc: [],
         packing: [
-            { id: "ORD-004", nama: "Celana Chino (75 pcs)" }
+            { id: cryptoId(), dbId: null, orderId: "ORD-004", nama: "Celana Chino (75 pcs)" }
         ]
     }
 };
 
+function cryptoId() {
+    return (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+        : "id-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
 let state = muatState();
+
+// ---------- Konversi baris Supabase <-> state lokal ----------
+function rowToCard(r, tahap) {
+    const m = (r.product_name || "").match(/\((\d+)\s*pcs\)/i);
+    return {
+        id: r.id, dbId: r.id, orderId: r.code,
+        nama: r.product_name, qty: r.qty, tahap,
+        assigned_to: r.assigned_to || "", notes: r.notes || ""
+    };
+}
+
+function applyRemoteData(data) {
+    // orders -> kanban
+    const kanban = { potong: [], jahit: [], qc: [], packing: [] };
+    let selesaiCount = 0;
+    [...(data.orders || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .forEach(r => {
+            if (r.stage === 'selesai') { selesaiCount++; return; }
+            if (kanban[r.stage]) kanban[r.stage].push(rowToCard(r, r.stage));
+        });
+    state.orderKanban = kanban;
+    state.totalOrderAktif = Object.values(kanban).reduce((n, a) => n + a.length, 0);
+    const maxNum = (data.orders || []).reduce((mx, r) => {
+        const n = parseInt((r.code || "").replace(/\D/g, ""), 10);
+        return isNaN(n) ? mx : Math.max(mx, n);
+    }, 0);
+    state.nextOrderId = Math.max(state.nextOrderId, maxNum + 1);
+
+    // stock_movements -> riwayatScan + stok barang jadi
+    state.riwayatScan = (data.stock_movements || []).map(mv => ({
+        sku: mv.sku,
+        jenis: mv.direction === "masuk" ? "Masuk" : "Keluar",
+        qty: mv.qty,
+        waktu: new Date(mv.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    })).slice(0, 50);
+    state.stokBarangJadi = (data.stock_movements || []).reduce((acc, mv) => {
+        if (mv.category !== "barang_jadi") return acc;
+        return acc + (mv.direction === "masuk" ? mv.qty : -mv.qty);
+    }, 0);
+    state.stokBarangJadi = Math.max(0, state.stokBarangJadi);
+
+    // finance_transactions -> arus kas & saldo
+    const bulan = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+    state.transaksiKeuangan = (data.finance_transactions || []).map(t => {
+        const d = new Date(t.txn_date + "T00:00:00");
+        return {
+            id: t.id,
+            tgl: `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`,
+            kategori: t.category,
+            nominal: Number(t.amount),
+            dbId: t.id
+        };
+    });
+    state.saldo = state.transaksiKeuangan.reduce((s, t) => s + t.nominal, 0);
+
+    // app_settings -> saldo awal & counter
+    (data.app_settings || []).forEach(s => {
+        if (s.key === "next_order_id") state.nextOrderId = Math.max(state.nextOrderId, Number(s.value) || 1);
+        if (s.key === "saldo_awal") state.saldo += Number(s.value) || 0;
+    });
+}
 
 // --- Toast Notification (pengganti alert yang lebih halus & profesional) ---
 function showToast(pesan, tipe = 'sukses') {
@@ -81,7 +156,7 @@ function simpanState() {
 }
 
 // --- Inisialisasi awal saat halaman selesai dimuat ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     // Set default tanggal pada form keuangan ke hari ini
     const tglKeuanganEl = document.getElementById('tgl-keuangan');
     if (tglKeuanganEl) {
@@ -97,7 +172,42 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Render seluruh data dari state (localStorage)
+    // ---- Inisialisasi database (Supabase / offline) ----
+    const badge = document.getElementById('sync-status');
+    if (typeof window.db !== 'undefined') {
+        window.db.initDB();
+        if (window.db.isRemote()) {
+            if (badge) { badge.textContent = '● Menghubungkan…'; badge.className = 'text-xs font-semibold text-blue-600'; }
+            try {
+                const remote = await window.db.loadAll();
+                if (remote) {
+                    applyRemoteData(remote);
+                    simpanState(); // cache lokal = cermin data cloud
+                    showToast('Terhubung ke Supabase. Data cloud dimuat.', 'info');
+                } else {
+                    showToast('Gagal memuat data cloud — memakai data lokal.', 'peringatan');
+                }
+            } catch (e) {
+                console.warn('Muat Supabase gagal:', e);
+                showToast('Koneksi Supabase gagal — mode offline.', 'peringatan');
+            }
+            // Realtime: render ulang saat ada perubahan dari perangkat lain
+            window.db.subscribe(async (table, event) => {
+                try {
+                    const fresh = await window.db.loadAll();
+                    if (fresh) { applyRemoteData(fresh); simpanState(); renderSemua(); }
+                } catch (_) {}
+            });
+        } else {
+            if (badge) { badge.textContent = '● Offline (lokal)'; badge.className = 'text-xs font-semibold text-amber-600'; }
+            window.addEventListener('online', async () => {
+                const n = await window.db.flushQueue().catch(() => 0);
+                if (n) showToast(`${n} data tertunda tersinkron ke cloud.`, 'sukses');
+            });
+        }
+    }
+
+    // Render seluruh data dari state (localStorage/Supabase)
     renderSemua();
 
     // Default menu yang aktif awal
@@ -225,7 +335,7 @@ function stopScanner() {
 // Tampilkan hasil SKU (dipakai oleh scanner kamera maupun input manual)
 function tampilkanHasilSku(sku) {
     lastScannedSku = sku;
-    document.getElementById('scanned-sku').innerText = lastScannedSku;
+    document.getElementById('scanned-sku').textContent = lastScannedSku;
     document.getElementById('scan-result-container').classList.remove('hidden');
 
     const btnSimpanStok = document.getElementById('btn-simpan-stok');
@@ -278,7 +388,7 @@ document.getElementById('btn-simpan-stok').addEventListener('click', () => {
     const jumlahEl = document.getElementById('jumlah-stok');
     const qty = parseInt(jumlahEl.value);
     if (!qty || isNaN(qty) || qty <= 0) {
-        alert("Jumlah harus berupa angka lebih dari 0.");
+        showToast("Jumlah harus berupa angka lebih dari 0.", "peringatan");
         return;
     }
 
@@ -294,8 +404,24 @@ document.getElementById('btn-simpan-stok').addEventListener('click', () => {
     if (state.riwayatScan.length > 50) state.riwayatScan.pop();
 
     simpanState();
+
+    // Simpan pergerakan stok ke Supabase (tabel stock_movements).
+    // Saat offline, db.insert otomatis mengantrekan operasi utk disinkronkan nanti.
+    const dbMap = JENIS_TO_DB[jenisValue] || { direction: jenisKata.toLowerCase(), category: 'barang_jadi' };
+    if (window.db) {
+        window.db.insert('stock_movements', {
+            sku: lastScannedSku,
+            direction: dbMap.direction,
+            category: dbMap.category,
+            qty: qty,
+            scanned_by: 'owner',
+            note: null
+        }).catch(() => {});
+    }
+
     renderDashboard();
     renderRiwayatScan(lastScannedSku);
+    showToast(`Stok ${jenisKata.toLowerCase()}: ${escapeHtml(lastScannedSku)} ×${qty} tersimpan.`, 'sukses');
 
     // Reset UI hasil scan
     const btnSimpanStok = document.getElementById('btn-simpan-stok');
@@ -363,10 +489,14 @@ function buatCardOrder(order, tahap) {
         buttonHtml = `<button onclick="geserTahap(this, '${tahap}', '${tujuan}')" class="btn-action w-full ${w.btn} border text-xs py-1.5 rounded font-semibold transition shadow-sm">Geser ke ${labelTujuan} &rarr;</button>`;
     }
 
+    const penugasan = order.assigned_to
+        ? `<p class="text-[10px] text-gray-400 mb-1"><i class="fas fa-user-team mr-1"></i>${escapeHtml(order.assigned_to)}</p>` : '';
+
     card.className = `order-card bg-white p-3 rounded-md shadow-sm border-l-4 ${w.border} mb-2 transition-all duration-300`;
     card.innerHTML = `
-        <p class="font-bold text-sm text-gray-800">${escapeHtml(order.id)}</p>
-        <p class="text-xs text-gray-500 mb-2">${escapeHtml(order.nama)}</p>
+        <p class="font-bold text-sm text-gray-800">${escapeHtml(order.orderId || order.id)}</p>
+        <p class="text-xs text-gray-500 mb-1">${escapeHtml(order.nama)}</p>
+        ${penugasan}
         ${buttonHtml}`;
     return card;
 }
@@ -383,7 +513,7 @@ function renderKanban() {
             orders.forEach(o => container.appendChild(buatCardOrder(o, tahap)));
         }
         const badge = document.getElementById(`badge-${tahap}`);
-        if (badge) badge.innerText = orders.length;
+        if (badge) badge.textContent = orders.length;
     });
 }
 
@@ -396,10 +526,38 @@ function geserTahap(btnElement, tahapSekarang, tahapTujuan) {
     const idx = state.orderKanban[tahapSekarang].findIndex(o => o.id === orderId);
     if (idx === -1) return;
     const [order] = state.orderKanban[tahapSekarang].splice(idx, 1);
+    order.tahap = tahapTujuan;
     state.orderKanban[tahapTujuan].push(order);
     simpanState();
 
+    // Sinkron ke Supabase (kolom stage pada tabel orders)
+    sinkronStage(order, tahapTujuan);
+
     renderKanban();
+}
+
+async function sinkronStage(order, tahapBaru) {
+    if (!window.db) return;
+    try {
+        if (order.dbId) {
+            await window.db.update('orders', order.dbId, { stage: tahapBaru });
+        } else if (window.db.isRemote()) {
+            // Kartu lama hasil migrasi lokal -> buat barisnya di cloud
+            const m = (order.nama || "").match(/\((\d+)\s*pcs\)/i);
+            const row = await window.db.insert('orders', {
+                code: order.orderId, product_name: order.nama,
+                qty: m ? parseInt(m[1]) : 1, stage: tahapBaru
+            });
+            if (row && !row._local) { order.dbId = row.id; simpanState(); }
+        } else {
+            // Offline: kartu tanpa dbId belum ada di cloud -> antrekan pembuatan order
+            const m = (order.nama || "").match(/\((\d+)\s*pcs\)/i);
+            window.db.enqueue({ type: 'insert', table: 'orders', row: {
+                code: order.orderId, product_name: order.nama,
+                qty: m ? parseInt(m[1]) : 1, stage: tahapBaru
+            }});
+        }
+    } catch (e) { console.warn('Sinkron stage gagal:', e); }
 }
 
 function selesaiProduksi(btnElement, tahapSekarang) {
@@ -413,17 +571,34 @@ function selesaiProduksi(btnElement, tahapSekarang) {
         if (idx !== -1) state.orderKanban[tahapSekarang].splice(idx, 1);
 
         // Tambah estimasi stok barang jadi dari jumlah order (angka dalam nama, mis. "(75 pcs)")
+        let qtyOrder = 0;
         if (order) {
             const m = order.nama.match(/\((\d+)\s*pcs\)/i);
-            if (m) state.stokBarangJadi += parseInt(m[1]);
+            if (m) { qtyOrder = parseInt(m[1]); state.stokBarangJadi += qtyOrder; }
         }
 
         state.totalOrderAktif = Math.max(0, state.totalOrderAktif - 1);
         simpanState();
 
+        // Sinkron ke Supabase: stage 'selesai' + catat stok masuk barang jadi
+        // (saat offline operasi otomatis diantrekan oleh db.js)
+        if (window.db) {
+            (async () => {
+                if (order && order.dbId) await window.db.update('orders', order.dbId, { stage: 'selesai' }).catch(() => {});
+                if (qtyOrder > 0) {
+                    await window.db.insert('stock_movements', {
+                        sku: order ? order.orderId : 'PRODUKSI',
+                        direction: 'masuk', category: 'barang_jadi',
+                        qty: qtyOrder, scanned_by: 'owner',
+                        note: `Penyelesaian produksi ${orderId}`
+                    }).catch(() => {});
+                }
+            })();
+        }
+
         renderKanban();
         renderDashboard();
-        alert(`Order ${orderId} selesai dan berhasil dipindahkan ke stok gudang!`);
+        showToast(`Order ${orderId} selesai & masuk stok gudang${qtyOrder ? ` (+${qtyOrder} pcs)` : ''}.`, 'sukses');
     }
 }
 
@@ -450,33 +625,53 @@ document.getElementById('form-order-baru').addEventListener('submit', (e) => {
     e.preventDefault();
     const nama = document.getElementById('order-nama').value.trim();
     const jumlah = parseInt(document.getElementById('order-jumlah').value);
+    const pekerjaEl = document.getElementById('order-pekerja');
+    const pekerja = pekerjaEl ? pekerjaEl.value.trim() : '';
     if (!nama || !jumlah || jumlah <= 0) {
-        alert("Mohon isi nama produk dan jumlah yang valid.");
+        showToast("Mohon isi nama produk dan jumlah yang valid.", "peringatan");
         return;
     }
 
-    const orderId = `ORD-${String(state.nextOrderId).padStart(3, '0')}`;
+    const orderCode = `ORD-${String(state.nextOrderId).padStart(3, '0')}`;
     state.nextOrderId++;
-    state.orderKanban.potong.push({ id: orderId, nama: `${nama} (${jumlah} pcs)` });
+    const card = {
+        id: cryptoId(), dbId: null, orderId: orderCode,
+        nama: `${nama} (${jumlah} pcs)`, assigned_to: pekerja, tahap: 'potong'
+    };
+    state.orderKanban.potong.push(card);
     state.totalOrderAktif++;
 
     simpanState();
+
+    // Simpan ke Supabase (tabel orders) — kolom siap untuk portal karyawan.
+    // Saat offline, operasi diantrekan dan disinkronkan begitu koneksi pulih.
+    if (window.db) {
+        window.db.insert('orders', {
+            code: orderCode, product_name: `${nama} (${jumlah} pcs)`,
+            qty: jumlah, stage: 'potong',
+            assigned_to: pekerja || null, notes: null
+        }).then(row => {
+            if (row && !row._local) { card.dbId = row.id; simpanState(); }
+        }).catch(() => {});
+    }
+
     renderKanban();
     renderDashboard();
     tutupModalOrder();
+    showToast(`Order ${orderCode} dibuat & masuk tahap Potong.`, 'sukses');
 });
 
 // --- 4. Logika Dashboard ---
 function renderDashboard() {
     const elStok = document.getElementById('dashboard-stok-jadi');
-    if (elStok) elStok.innerText = state.stokBarangJadi.toLocaleString('id-ID');
+    if (elStok) elStok.textContent = state.stokBarangJadi.toLocaleString('id-ID');
 
     const elOrder = document.getElementById('dashboard-order-aktif');
     if (elOrder) elOrder.innerHTML = `${state.totalOrderAktif} <span class="text-xs font-normal">batch</span>`;
 
     const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
     const elSaldo = document.getElementById('dashboard-saldo');
-    if (elSaldo) elSaldo.innerText = formatter.format(state.saldo);
+    if (elSaldo) elSaldo.textContent = formatter.format(state.saldo);
 }
 
 // --- 5. Logika Form Keuangan ---
@@ -496,7 +691,7 @@ function renderKeuangan() {
             </tr>`;
     }).join('');
 
-    document.getElementById('total-saldo').innerText = formatRupiah.format(state.saldo);
+    document.getElementById('total-saldo').textContent = formatRupiah.format(state.saldo);
 }
 
 document.getElementById('form-keuangan').addEventListener('submit', function (e) {
@@ -522,12 +717,28 @@ document.getElementById('form-keuangan').addEventListener('submit', function (e)
 
     const nominal = jenis === "Pemasukan" ? jumlah : -jumlah;
     state.saldo += nominal;
-    state.transaksiKeuangan.unshift({ tgl: tglFormatted, kategori: kategori, nominal: nominal });
+    const transaksiBaru = { tgl: tglFormatted, kategori: kategori, nominal: nominal };
+    state.transaksiKeuangan.unshift(transaksiBaru);
     if (state.transaksiKeuangan.length > 200) state.transaksiKeuangan.pop();
 
     simpanState();
+
+    // Simpan arus kas ke Supabase (tabel finance_transactions).
+    // Saat offline, operasi diantrekan dan disinkronkan begitu koneksi pulih.
+    if (window.db) {
+        window.db.insert('finance_transactions', {
+            txn_date: tanggalInput,          // format YYYY-MM-DD
+            category: kategori,
+            amount: nominal,
+            description: null,
+            recorded_by: 'owner'
+        }).then(row => { if (row && !row._local) { transaksiBaru.dbId = row.id; simpanState(); } })
+          .catch(() => {});
+    }
+
     renderKeuangan();
     renderDashboard();
+    showToast(`Transaksi ${jenis} ${formatRupiah.format(jumlah)} tersimpan.`, 'sukses');
 
     // Beri sorotan singkat pada baris baru
     const firstRow = document.getElementById('tabel-keuangan').firstElementChild;
