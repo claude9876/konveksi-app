@@ -38,6 +38,30 @@ const defaultState = {
 
 let state = muatState();
 
+// --- Toast Notification (pengganti alert yang lebih halus & profesional) ---
+function showToast(pesan, tipe = 'sukses') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const gaya = {
+        sukses:     { bg: '#059669', ikon: 'fa-circle-check' },
+        info:       { bg: '#4f46e5', ikon: 'fa-circle-info' },
+        peringatan: { bg: '#d97706', ikon: 'fa-triangle-exclamation' },
+        galat:      { bg: '#dc2626', ikon: 'fa-circle-exclamation' }
+    }[tipe] || { bg: '#059669', ikon: 'fa-circle-check' };
+
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.style.background = gaya.bg;
+    el.innerHTML = `<i class="fas ${gaya.ikon}"></i><span>${escapeHtml(String(pesan))}</span>`;
+    container.appendChild(el);
+
+    setTimeout(() => {
+        el.classList.add('out');
+        el.addEventListener('animationend', () => el.remove(), { once: true });
+    }, 2800);
+}
+
 function muatState() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -88,6 +112,13 @@ function renderSemua() {
 }
 
 // --- 1. Logika Navigasi Tab ---
+const metaTab = {
+    dashboard: { judul: 'Dashboard', sub: 'Ringkasan operasional konveksi hari ini' },
+    stok:      { judul: 'Stok & Scan Barcode', sub: 'Catat keluar-masuk barang dengan pemindaian' },
+    produksi:  { judul: 'Alur Produksi', sub: 'Pantau progres batch dari potongan hingga pengemasan' },
+    keuangan:  { judul: 'Keuangan', sub: 'Pencatatan arus kas pemasukan & pengeluaran' }
+};
+
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => {
         el.classList.add('hidden');
@@ -97,27 +128,23 @@ function switchTab(tabId) {
     const targetTab = document.getElementById(tabId);
     if (!targetTab) return;
     targetTab.classList.remove('hidden');
-    if (tabId === 'produksi') {
-        targetTab.classList.add('flex', 'flex-col');
-    } else {
-        targetTab.classList.add('block');
-    }
+    targetTab.classList.add('block');
 
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-blue-700', 'font-semibold', 'border-t-2', 'border-l-4', 'border-blue-700');
-        btn.classList.add('text-gray-500', 'border-transparent');
+    // Aktifkan nav yang cocok (sidebar desktop + bottom nav mobile, keduanya memakai data-tab-btn)
+    document.querySelectorAll('[data-tab-btn]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tabBtn === tabId);
     });
 
-    const activeBtn = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
-    if (activeBtn) {
-        activeBtn.classList.remove('text-gray-500', 'border-transparent');
-        activeBtn.classList.add('text-blue-700', 'font-semibold');
-        if (window.innerWidth >= 768) {
-            activeBtn.classList.add('border-l-4', 'border-blue-700');
-        } else {
-            activeBtn.classList.add('border-t-2', 'border-blue-700');
-        }
+    // Perbarui judul & subjudul halaman di topbar
+    const meta = metaTab[tabId];
+    if (meta) {
+        const t = document.getElementById('page-title');
+        const s = document.getElementById('page-subtitle');
+        if (t) t.textContent = meta.judul;
+        if (s) s.textContent = meta.sub;
     }
+
+    window.scrollTo({ top: 0 });
 
     // Matikan kamera otomatis jika pindah menu
     if (tabId !== 'stok' && isScanning) {
